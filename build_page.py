@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Build the static index.html file to serve to the client.
 Inputs are a JavaScript script, a SASS (scss) style file, a jinja2 template and

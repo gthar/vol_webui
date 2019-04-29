@@ -20,6 +20,8 @@ function setVar {
     setVar PORT $PORT > \
     build/bin/vol_webui.py
 
+chmod +x build/bin/vol_webui.py
+
 echo --- building alsa monitorer
 gcc src/alsa_events.c \
     -std=gnu99 -Wall -pedantic -Wextra \

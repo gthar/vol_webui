@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Server part of the app. Communicate with the client through WebSockets
 """
@@ -78,23 +80,23 @@ async def producer(mixer, card, connected):
     return returncode
 
 
-async def handler(websocket, _, connected, mixer):
+async def handler(websocket, _, connected, mixer_name):
     """
     WebSocket handler. Watch for changes in the clients and update the volume
     accordingly
     """
     connected.add(websocket)
     try:
-        vol, mute = query_mixer(mixer)
+        vol, mute = query_mixer(mixer_name)
         await websocket.send(mk_msg('volume', vol))
         await websocket.send(mk_msg('mute', mute))
 
         async for msg in websocket:
             data = json.loads(msg)
-            mixer = alsaaudio.Mixer(mixer)
+            mixer = alsaaudio.Mixer(mixer_name)
 
             if data['type'] == 'volume':
-                mixer.setvolume(int(data['value']))
+                mixer.setvolume(data['value'])
 
             elif data['type'] == 'mute':
                 mute, _ = mixer.getmute()
@@ -122,7 +124,7 @@ def main():
     loop = asyncio.get_event_loop()
     loop.create_task(producer(args.mixer, args.card, connected))
     loop.run_until_complete(websockets.serve(
-        functools.partial(handler, connected=connected, mixer=args.mixer),
+        functools.partial(handler, connected=connected, mixer_name=args.mixer),
         args.host,
         PORT
     ))

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Download, subset and put in the right direction the UI font
 """
