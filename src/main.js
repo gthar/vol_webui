@@ -1,3 +1,4 @@
+const inc_by = 5;
 const ip = '127.0.0.1';
 //const ip = location.hostname;
 const url = `ws://${ip}:${port}/`
@@ -48,17 +49,45 @@ const setVol = (x) => {
 
 var websocket = new WebSocket(url);
 
-slider.oninput = () => {
-    websocket.send(JSON.stringify({type: 'volume', value: slider.value}));
+const sendVol = (inc) => () => {
+    let new_val = parseInt(slider.value, 10) + inc;
+    if (new_val < 0) {
+        new_val = 0;
+    }
+    if (new_val > 100) {
+        new_val = 100
+    }
+    websocket.send(JSON.stringify({
+        type: 'volume',
+        value: new_val
+    }));
 }
 
-button.onclick = () => {
+const sendMute = () => {
     websocket.send(JSON.stringify({type: 'mute'}));
 }
+
+slider.oninput = sendVol(0);
+button.onclick = sendMute;
 
 const actions = {'volume': setVol, 'mute': setMute};
 
 websocket.onmessage = (event) => {
     let data = JSON.parse(event.data);
     actions[data.type](data.value);
+}
+
+const key_actions = {
+    " ": sendMute,
+    "m": sendMute,
+    "+": sendVol(inc_by),
+    "-": sendVol(-inc_by)
+}
+
+document.body.onkeypress = (event) => {
+    try {
+        key_actions[event.key]();
+    } catch (err) {
+        console.log(`no action implemented for key '${event.key}'`);
+    }
 }
