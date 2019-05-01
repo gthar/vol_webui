@@ -1,0 +1,7 @@
+server {
+    listen {{ port }};
+    root {{ install_dir }}/share/vol_webui/www;
+    location / {
+        index.html;
+    }
+}
