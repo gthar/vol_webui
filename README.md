@@ -1,6 +1,9 @@
 # vol_webui
 
 Remote Web UI interface to control the volume of my RaspberryPi from my phone
+Intended to be run by the user `volume`.
+
+Create if needed with: `useradd -M -G audio -s /usr/sbin/nologin volume`
 
 ## Build and install
 * build_page.py: builds the static index.html to serve
@@ -26,9 +29,8 @@ Remote Web UI interface to control the volume of my RaspberryPi from my phone
 * nginx
 
 ## TODO
-* Make nginx config for the static content
-* Make systemd unit for the server
 * Use a proper logger
 * Test server on the pi
 * install.sh
 * gitignore
+* use a makefile
