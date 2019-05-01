@@ -1,0 +1,14 @@
+[Unitt]
+Description = daemon for the volume web ui
+After = systemd-user-sessions.service
+
+[Service]
+User = {{ user }}
+Group = {{ user }}
+Type = simple
+ExecStart = {{ install_dir }}/bin/vol_webui --host {{ host }} --mixer {{ mixer }} --card {{ card }}
+Restart = on-failure
+RestartSec = 15
+
+[Install]
+WantedBy = multi-user.target

@@ -45,9 +45,19 @@ python get_font.py \
    --kept_chars "0123456789M()" \
    --out_font build/share/vol_webui/www/open_sans.ttf
 
-echo "rendering nginx config file"
+echo --- rendering nginx config file
 python render_nginx_conf.py \
     --in_file src/nginx.jinja2 \
     --port $UI_PORT \
     --install_dir $INSTALL_DIR \
     --out_file build/share/vol_webui/nginx.conf
+
+echo --- rendering systemd unit file
+python render_systemd_unit.py \
+    --in_file src/systemd_unit.jinja2 \
+    --out_file build/lib/systemd/system/vol_webui.service \
+    --install_dir $INSTALL_DIR \
+    --user volume \
+    --ws_host localhost \
+    --mixer Master \
+    --card hw:0
