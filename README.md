@@ -13,18 +13,13 @@ Create if needed with: `useradd -M -G audio -s /usr/sbin/nologin volume`
 * install.sh: copy the built files and install it with stow
 
 ## Build/install dependencies
-* python fonttools
-* python htmlmin
-* python Jinja2
-* python libsass
-* python requests
+* what is speified in build_requirements.txt
 * alsa
 * gcc
 * Google Closure Compiler
 
 ## Run dependencies
-* pyalsaaudio
-* python websockets
+* what is specified in run_requirements.txt
 * alsa
 * nginx
 
