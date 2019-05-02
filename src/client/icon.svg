@@ -1,4 +1,5 @@
-<svg viewBox="0 0 75 75" >
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 75 75">
     <polygon
         id="icon-main"
         points="39.389,13.769 22.235,28.606 6,28.606 6,47.699 21.989,47.699 39.389,62.75 39.389,13.769"

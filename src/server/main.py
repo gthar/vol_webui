@@ -14,10 +14,10 @@ import alsaaudio
 import websockets
 
 
-# This two will be hardcoded by the `build.sh` script. This allows me to have
+# These two will be hardcoded resulting file. This allows me to have
 # the client javascript sent as a static file
-INSTALL_DIR = None
-PORT = None
+INSTALL_DIR = {{ install_dir }}
+PORT = {{ port }}
 
 
 def query_mixer(mixer_name):

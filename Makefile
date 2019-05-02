@@ -29,7 +29,7 @@ www_dir = $(share)/www
 index_html = $(www_dir)/index.html
 main_js = $(www_dir)/main.js
 style = $(www_dir)/style.css
-icon = $(www_dir)/icon.css
+icon = $(www_dir)/icon.svg
 font = $(www_dir)/open_sans.ttf
 
 systemd_dir = $(build_dir)/lib/systemd/system
@@ -48,14 +48,24 @@ client: $(index_html) $(main_js) $(style) $(icon) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
+#$(daemon): $(server_src)/main.py
+	#@echo --- preparing server script
+	#mkdir -p $(build_dir)/bin
+	#build_scripts/build_daemon.sh \
+		#src/server/main.py \
+		#$(build_dir)/bin/vol_webui.py \
+		#$(ws_port) \
+		#$(install_dir)
+	#chmod +x $(build_dir)/bin/vol_webui.py
+
 $(daemon): $(server_src)/main.py
 	@echo --- preparing server script
 	mkdir -p $(build_dir)/bin
-	build_scripts/build_daemon.sh \
+	python render_template.py \
 		src/server/main.py \
 		$(build_dir)/bin/vol_webui.py \
-		$(ws_port) \
-		$(install_dir)
+		--port $(ws_port) \
+		--install_dir $(install_dir)
 	chmod +x $(build_dir)/bin/vol_webui.py
 
 $(alsa_events): $(server_src)/alsa_events.c
@@ -111,22 +121,22 @@ $(nginx_conf): $(src_dir)/nginx.jinja2 build_env
 	@echo --- rendering nginx config file
 	mkdir -p $(share)
 	. build_env/bin/activate; \
-	python build_scripts/render_nginx_conf.py \
-		--in_file $(src_dir)/nginx.jinja2 \
+	python render_template.py \
+		$(src_dir)/nginx.jinja2 \
+		$(nginx_conf) \
 		--port $(ui_port) \
-		--install_dir $(install_dir) \
-		--out_file $(nginx_conf)
+		--install_dir $(install_dir)
 
 $(systemd_unit): $(src_dir)/systemd_unit.jinja2 build_env
 	@echo --- rendering systemd unit file
 	mkdir -p $(systemd_dir)
 	. build_env/bin/activate; \
-	python build_scripts/render_systemd_unit.py \
-	    --in_file $(src_dir)/systemd_unit.jinja2 \
-	    --out_file $(systemd_unit) \
-	    --install_dir $(install_dir) \
+	python render_template.py \
+	    $(src_dir)/systemd_unit.jinja2 \
+	    $(systemd_unit) \
 	    --user $(user) \
-	    --ws_host $(ws_host) \
+	    --install_dir $(install_dir) \
+	    --host $(ws_host) \
 	    --mixer $(mixer) \
 	    --card $(card)
 
