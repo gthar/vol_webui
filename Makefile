@@ -9,6 +9,10 @@ mixer = Master
 card = hw:0
 kept_chars = "0123456789M()"
 
+LIBS = alsa
+CFLAGS = -std=gnu99 -Wall -pedantic -Wextra `pkg-config --cflags ${LIBS}`
+LDFLAGS = `pkg-config --libs ${LIBS}`
+
 font_uri = https://fonts.gstatic.com/s/opensans/v16/mem8YaGs126MiZpBA-UFVZ0e.ttf
 
 src_dir = src
@@ -67,12 +71,8 @@ $(daemon): $(daemon_template)
 
 $(alsa_events): $(server_src)/alsa_events.c
 	@echo --- building alsa monitorer
-	mkdir -p $(build_dir)/bin
-	gcc src/server/alsa_events.c \
-		-std=gnu99 -Wall -pedantic -Wextra \
-		-I/usr/include/alsa \
-		-o $(alsa_events) \
-		-lasound
+	mkdir -p $(bin_dir)
+	gcc $(monitor_src) $(CFLAGS) -o $(alsa_events) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
