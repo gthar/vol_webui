@@ -20,7 +20,7 @@ daemon_template = $(server_src)/vol_webui_d.py.jinja2
 nginx_template = $(src_dir)/nginx.conf.jinja2
 unit_template = $(src_dir)/vol_webui.service.jinja2
 
-index_src = $(client_src)/index.html
+index_template = $(client_src)/index.html.jinja2
 js_src = $(client_src)/main.js
 style_src = $(client_src)/style.scss
 icon_src = $(client_src)/icon.svg
@@ -32,7 +32,6 @@ www_dir = $(share)/www
 index_html = $(www_dir)/index.html
 main_js = $(www_dir)/main.js
 style = $(www_dir)/style.css
-icon = $(www_dir)/icon.svg
 font = $(www_dir)/open_sans.ttf
 
 systemd_dir = $(build_dir)/lib/systemd/system
@@ -47,7 +46,7 @@ all: server client system
 
 server: $(daemon) $(alsa_events)
 
-client: $(index_html) $(main_js) $(style) $(icon) $(font)
+client: $(index_html) $(main_js) $(style) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
@@ -77,9 +76,9 @@ $(font):
 	pyftsubset $(tmp) --text="0123456789M()" --output-file=$(font)
 	@rm $(tmp)
 
-$(index_html): $(index_src)
+$(index_html): $(index_template) $(icon_src)
 	mkdir -p $(www_dir)
-	cp $(index_src) $(index_html)
+	python render_template.py $(index_template) $(index_html)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
@@ -101,10 +100,6 @@ $(style): $(style_src)
 		--sourcemap=none \
 		$(style_src) \
 		$(style)
-
-$(icon): $(icon_src)
-	mkdir -p $(www_dir)
-	cp $(icon_src) $(icon)
 
 $(nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
