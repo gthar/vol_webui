@@ -23,18 +23,28 @@ style_src = $(client_src)/style.scss
 icon_src = $(client_src)/icon.svg
 
 share = $(build_dir)/share/vol_webui
+nginx_conf = $(share)/nginx.conf
 www_dir = $(share)/www
-systemd_dir=$(build_dir)/lib/systemd/system
+static_page = $(www_dir)/index.html
+font = $(www_dir)/open_sans.ttf
+
+systemd_dir = $(build_dir)/lib/systemd/system
+systemd_unit = $(systemd_dir)/vol_webui.service
+
+bin_dir = $(build_dir)/bin
+daemon = $(bin_dir)/vol_webui.py
+alsa_events = $(bin_dir)/alsa_events
+
 
 all: server client system
 
-server: daemon alsa_monitor
+server: $(daemon) $(alsa_events)
 
-client: static_page font
+client: $(static_page) $(font)
 
-system: nginx systemd_unit
+system: $(nginx_conf) $(systemd_unit)
 
-daemon: $(server_src)/main.py
+$(daemon): $(server_src)/main.py
 	@echo --- preparing server script
 	mkdir -p $(build_dir)/bin
 	build_scripts/build_daemon.sh \
@@ -44,13 +54,13 @@ daemon: $(server_src)/main.py
 		$(install_dir)
 	chmod +x $(build_dir)/bin/vol_webui.py
 
-alsa_monitor: $(server_src)/alsa_events.c
+$(alsa_events): $(server_src)/alsa_events.c
 	@echo --- building alsa monitorer
 	mkdir -p $(build_dir)/bin
 	gcc src/server/alsa_events.c \
 		-std=gnu99 -Wall -pedantic -Wextra \
 		-I/usr/include/alsa \
-		-o $(build_dir)/bin/alsa_events \
+		-o $(alsa_events) \
 		-lasound
 
 build_env: build_requirements.txt
@@ -59,7 +69,7 @@ build_env: build_requirements.txt
 	. build_env/bin/activate; \
 	pip install -r build_requirements.txt
 
-static_page: $(index_src) $(js_src) $(style_src) $(icon_src) build_env
+$(static_page): $(index_src) $(js_src) $(style_src) $(icon_src) build_env
 	@echo --- building static page
 	mkdir -p $(www_dir)
 	. build_env/bin/activate; \
@@ -71,16 +81,16 @@ static_page: $(index_src) $(js_src) $(style_src) $(icon_src) build_env
 	   --in_jinja $(index_src) \
 	   --out_index $(www_dir)/index.html
 
-font: build_env
+$(font): build_env
 	@echo --- retrieving and preparing font
 	mkdir -p $(www_dir)
 	. build_env/bin/activate; \
 	python build_scripts/get_font.py \
 		--font_orig $(font_uri) \
 		--kept_chars "0123456789M()" \
-		--out_font $(www_dir)/open_sans.ttf
+		--out_font $(font)
 
-nginx: $(src_dir)/nginx.jinja2 build_env
+$(nginx_conf): $(src_dir)/nginx.jinja2 build_env
 	@echo --- rendering nginx config file
 	mkdir -p $(share)
 	. build_env/bin/activate; \
@@ -88,15 +98,15 @@ nginx: $(src_dir)/nginx.jinja2 build_env
 		--in_file $(src_dir)/nginx.jinja2 \
 		--port $(ui_port) \
 		--install_dir $(install_dir) \
-		--out_file $(share)/nginx.conf
+		--out_file $(nginx_conf)
 
-systemd_unit: $(src_dir)/systemd_unit.jinja2 build_env
+$(systemd_unit): $(src_dir)/systemd_unit.jinja2 build_env
 	@echo --- rendering systemd unit file
 	mkdir -p $(systemd_dir)
 	. build_env/bin/activate; \
 	python build_scripts/render_systemd_unit.py \
 	    --in_file $(src_dir)/systemd_unit.jinja2 \
-	    --out_file $(systemd_dir)/vol_webui.service \
+	    --out_file $(systemd_unit) \
 	    --install_dir $(install_dir) \
 	    --user $(user) \
 	    --ws_host $(ws_host) \
@@ -104,5 +114,5 @@ systemd_unit: $(src_dir)/systemd_unit.jinja2 build_env
 	    --card $(card)
 
 clean:
-	rm -r $(build_dir)
-	rm -r build_env
+	rm -rf $(build_dir)
+	rm -rf build_env
