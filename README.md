@@ -28,5 +28,4 @@ Create if needed with: `useradd -M -G audio -s /usr/sbin/nologin volume`
 ## TODO
 * Use a proper logger
 * Test server on the pi
-* install.sh
-* use a makefile
+* install target
