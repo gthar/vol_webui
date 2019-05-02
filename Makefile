@@ -7,6 +7,7 @@ ws_host = localhost
 user = volume
 mixer = Master
 card = hw:0
+kept_chars = "0123456789M()"
 
 font_uri = https://fonts.gstatic.com/s/opensans/v16/mem8YaGs126MiZpBA-UFVZ0e.ttf
 
@@ -29,9 +30,12 @@ share = $(build_dir)/share/vol_webui
 nginx_conf = $(share)/nginx.conf
 www_dir = $(share)/www
 
+tmp_dir = temp
+tmp_index = $(tmp_dir)/index.html.jinja2
+
 index_html = $(www_dir)/index.html
-main_js = $(www_dir)/main.js
-style = $(www_dir)/style.css
+main_js = $(tmp_dir)/main.js
+style = $(tmp_dir)/style.css
 font = $(www_dir)/open_sans.ttf
 
 systemd_dir = $(build_dir)/lib/systemd/system
@@ -41,12 +45,13 @@ bin_dir = $(build_dir)/bin
 daemon = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
 
+full_font = $(tmp_dir)/OpenSans.ttf
 
 all: server client system
 
 server: $(daemon) $(alsa_events)
 
-client: $(index_html) $(main_js) $(style) $(font)
+client: $(index_html) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
@@ -69,16 +74,22 @@ $(alsa_events): $(server_src)/alsa_events.c
 		-o $(alsa_events) \
 		-lasound
 
-$(font):
-	@echo --- retrieving and preparing font
-	$(eval tmp := $(shell mktemp))
-	wget -O $(tmp) $(font_uri)
-	pyftsubset $(tmp) --text="0123456789M()" --output-file=$(font)
-	@rm $(tmp)
+$(full_font):
+	@echo --- retrieving font
+	mkdir -p $(tmp_dir)
+	wget -O $(full_font) $(font_uri)
 
-$(index_html): $(index_template) $(icon_src)
-	mkdir -p $(www_dir)
-	python render_template.py $(index_template) $(index_html)
+$(font): $(full_font)
+	@echo --- subsetting font
+	pyftsubset $(full_font) --text=$(kept_chars) --output-file=$(font)
+
+$(index_html): $(index_template) $(main_js) $(style) $(icon_src)
+	@echo --- rendering index.html
+	@mkdir -p $(www_dir)
+	@mkdir -p $(tmp_dir)
+	@cp $(index_template) $(tmp_index)
+	@cp $(icon_src) $(tmp_dir)
+	python render_template.py $(tmp_index) $(index_html)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
@@ -124,3 +135,4 @@ $(systemd_unit): $(unit_template)
 
 clean:
 	rm -rf $(build_dir)
+	rm -rf $(tmp_dir)

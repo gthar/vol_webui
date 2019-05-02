@@ -1,18 +1,16 @@
 <html>
- <head>
-   <meta charset="utf-8"/>
-   <link rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <div class="center-div" id="vol-widget">
-      <div class="container space-around" id="toprow">
-        <button type="button">
-            {% include 'icon.svg' %}
-        </button>
-        <div id="current-vol"></div>
-      </div>
-      <input type="range" min="0" max="100">
-    </div>
-    <script src="main.js"></script>
-  </body>
+    <head>
+        <meta charset="utf-8"/>
+        <style>{% include 'style.css' %}</style>
+    </head>
+    <body>
+        <div class="center-div" id="vol-widget">
+            <div class="container space-around" id="toprow">
+                <button type="button">{% include 'icon.svg' %}</button>
+                <div id="current-vol"></div>
+            </div>
+            <input type="range" min="0" max="100">
+        </div>
+        <script>{% include 'main.js' %}</script>
+    </body>
 </html>
