@@ -15,7 +15,10 @@ server_src = $(src_dir)/server
 client_src = $(src_dir)/client
 
 monitor_src = $(server_src)/alsa_events.c
-daemon_src = $(server_src)/main.py
+daemon_template = $(server_src)/vol_webui_d.py.jinja2
+
+nginx_template = $(src_dir)/nginx.conf.jinja2
+unit_template = $(src_dir)/vol_webui.service.jinja2
 
 index_src = $(client_src)/index.html
 js_src = $(client_src)/main.js
@@ -36,7 +39,7 @@ systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/vol_webui.service
 
 bin_dir = $(build_dir)/bin
-daemon = $(bin_dir)/vol_webui.py
+daemon = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
 
 
@@ -48,25 +51,15 @@ client: $(index_html) $(main_js) $(style) $(icon) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
-#$(daemon): $(server_src)/main.py
-	#@echo --- preparing server script
-	#mkdir -p $(build_dir)/bin
-	#build_scripts/build_daemon.sh \
-		#src/server/main.py \
-		#$(build_dir)/bin/vol_webui.py \
-		#$(ws_port) \
-		#$(install_dir)
-	#chmod +x $(build_dir)/bin/vol_webui.py
-
-$(daemon): $(server_src)/main.py
+$(daemon): $(daemon_template)
 	@echo --- preparing server script
 	mkdir -p $(build_dir)/bin
 	python render_template.py \
-		src/server/main.py \
-		$(build_dir)/bin/vol_webui.py \
+		$(daemon_template) \
+		$(daemon) \
 		--port $(ws_port) \
-		--install_dir $(install_dir)
-	chmod +x $(build_dir)/bin/vol_webui.py
+		--install_dir \"$(install_dir)\"
+	chmod +x $(daemon)
 
 $(alsa_events): $(server_src)/alsa_events.c
 	@echo --- building alsa monitorer
@@ -86,6 +79,7 @@ build_env: build_requirements.txt
 $(font): build_env
 	@echo --- retrieving and preparing font
 	mkdir -p $(www_dir)
+	mkdir -p $(www_dir)
 	. build_env/bin/activate; \
 	python build_scripts/get_font.py \
 		--font_orig $(font_uri) \
@@ -93,10 +87,12 @@ $(font): build_env
 		--out_font $(font)
 
 $(index_html): $(index_src)
+	mkdir -p $(www_dir)
 	cp $(index_src) $(index_html)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
+	mkdir -p $(www_dir)
 	$(eval tmp := $(shell mktemp))
 	@echo 'const port = $(ws_port);' > $(tmp)
 	/usr/bin/closure-compiler \
@@ -108,6 +104,7 @@ $(main_js): $(js_src)
 
 $(style): $(style_src)
 	@echo -- building style.css
+	mkdir -p $(www_dir)
 	/usr/bin/sass \
 		--style compressed \
 		--sourcemap=none \
@@ -115,24 +112,23 @@ $(style): $(style_src)
 		$(style)
 
 $(icon): $(icon_src)
+	mkdir -p $(www_dir)
 	cp $(icon_src) $(icon)
 
-$(nginx_conf): $(src_dir)/nginx.jinja2 build_env
+$(nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
 	mkdir -p $(share)
-	. build_env/bin/activate; \
 	python render_template.py \
-		$(src_dir)/nginx.jinja2 \
+		$(nginx_template) \
 		$(nginx_conf) \
 		--port $(ui_port) \
 		--install_dir $(install_dir)
 
-$(systemd_unit): $(src_dir)/systemd_unit.jinja2 build_env
+$(systemd_unit): $(unit_template)
 	@echo --- rendering systemd unit file
 	mkdir -p $(systemd_dir)
-	. build_env/bin/activate; \
 	python render_template.py \
-	    $(src_dir)/systemd_unit.jinja2 \
+	    $(unit_template) \
 	    $(systemd_unit) \
 	    --user $(user) \
 	    --install_dir $(install_dir) \
