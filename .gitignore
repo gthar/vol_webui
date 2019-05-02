@@ -1,4 +1,4 @@
 .sass-cache
 build
-env
-test.sh
+build_env
+run_env

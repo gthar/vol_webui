@@ -30,6 +30,16 @@ gcc src/server/alsa_events.c \
     -o build/bin/alsa_events \
     -lasound
 
+if [ ! -d build_env ]
+then
+    echo --- preparing virtual environtment to build
+    virtualenv build_env
+    source build_env/bin/activate
+    pip install -r build_requirements.txt
+else
+    source build_env/bin/activate
+fi
+
 echo --- building static page
 python build_scripts/build_page.py \
    --in_js src/client/main.js \
