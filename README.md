@@ -18,6 +18,7 @@ make
 * alsa
 * gcc
 * Google Closure Compiler
+* wget
 
 ## Run dependencies
 * what is specified in requirements.txt
