@@ -70,21 +70,12 @@ $(alsa_events): $(server_src)/alsa_events.c
 		-o $(alsa_events) \
 		-lasound
 
-build_env: build_requirements.txt
-	@echo --- preparing virtual environtment to build
-	virtualenv build_env
-	. build_env/bin/activate; \
-	pip install -r build_requirements.txt
-
-$(font): build_env
+$(font):
 	@echo --- retrieving and preparing font
-	mkdir -p $(www_dir)
-	mkdir -p $(www_dir)
-	. build_env/bin/activate; \
-	python build_scripts/get_font.py \
-		--font_orig $(font_uri) \
-		--kept_chars "0123456789M()" \
-		--out_font $(font)
+	$(eval tmp := $(shell mktemp))
+	wget -O $(tmp) $(font_uri)
+	pyftsubset $(tmp) --text="0123456789M()" --output-file=$(font)
+	@rm $(tmp)
 
 $(index_html): $(index_src)
 	mkdir -p $(www_dir)
@@ -138,4 +129,3 @@ $(systemd_unit): $(unit_template)
 
 clean:
 	rm -rf $(build_dir)
-	rm -rf build_env
