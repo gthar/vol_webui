@@ -17,7 +17,7 @@ client_src = $(src_dir)/client
 monitor_src = $(server_src)/alsa_events.c
 daemon_src = $(server_src)/main.py
 
-index_src = $(client_src)/index.jinja2
+index_src = $(client_src)/index.html
 js_src = $(client_src)/main.js
 style_src = $(client_src)/style.scss
 icon_src = $(client_src)/icon.svg
@@ -25,7 +25,11 @@ icon_src = $(client_src)/icon.svg
 share = $(build_dir)/share/vol_webui
 nginx_conf = $(share)/nginx.conf
 www_dir = $(share)/www
-static_page = $(www_dir)/index.html
+
+index_html = $(www_dir)/index.html
+main_js = $(www_dir)/main.js
+style = $(www_dir)/style.css
+icon = $(www_dir)/icon.css
 font = $(www_dir)/open_sans.ttf
 
 systemd_dir = $(build_dir)/lib/systemd/system
@@ -40,7 +44,7 @@ all: server client system
 
 server: $(daemon) $(alsa_events)
 
-client: $(static_page) $(font)
+client: $(index_html) $(main_js) $(style) $(icon) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
@@ -69,18 +73,6 @@ build_env: build_requirements.txt
 	. build_env/bin/activate; \
 	pip install -r build_requirements.txt
 
-$(static_page): $(index_src) $(js_src) $(style_src) $(icon_src) build_env
-	@echo --- building static page
-	mkdir -p $(www_dir)
-	. build_env/bin/activate; \
-	python build_scripts/build_page.py \
-	   --in_js $(js_src) \
-	   --port $(ws_port) \
-	   --in_scss $(style_src) \
-	   --in_svg $(icon_src) \
-	   --in_jinja $(index_src) \
-	   --out_index $(www_dir)/index.html
-
 $(font): build_env
 	@echo --- retrieving and preparing font
 	mkdir -p $(www_dir)
@@ -89,6 +81,31 @@ $(font): build_env
 		--font_orig $(font_uri) \
 		--kept_chars "0123456789M()" \
 		--out_font $(font)
+
+$(index_html): $(index_src)
+	cp $(index_src) $(index_html)
+
+$(main_js): $(js_src)
+	@echo --- building main.js
+	$(eval tmp := $(shell mktemp))
+	@echo 'const port = $(ws_port);' > $(tmp)
+	/usr/bin/closure-compiler \
+		--compilation_level ADVANCED_OPTIMIZATIONS \
+		--js $(tmp) \
+		--js $(js_src) \
+		--js_output_file $(main_js)
+	@rm $(tmp)
+
+$(style): $(style_src)
+	@echo -- building style.css
+	/usr/bin/sass \
+		--style compressed \
+		--sourcemap=none \
+		$(style_src) \
+		$(style)
+
+$(icon): $(icon_src)
+	cp $(icon_src) $(icon)
 
 $(nginx_conf): $(src_dir)/nginx.jinja2 build_env
 	@echo --- rendering nginx config file

@@ -1,16 +1,18 @@
 <html>
  <head>
    <meta charset="utf-8"/>
-   <style>{{ style_css }}</style>
+   <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <div class="center-div" id="vol-widget">
       <div class="container space-around" id="toprow">
-        <button type="button">{{ icon_svg }}</button>
+        <button type="button">
+          <object type="image/svg+xml" data="icon.svg"></object>
+        </button>
         <div id="current-vol"></div>
       </div>
       <input type="range" min="0" max="100">
     </div>
-    <script>{{ main_js }}</script>
+    <script src="main.js"></script>
   </body>
 </html>
