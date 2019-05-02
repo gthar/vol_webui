@@ -7,6 +7,7 @@ arguments
 """
 
 import argparse
+import os
 import sys
 
 import jinja2
@@ -24,11 +25,16 @@ def parse_unknown(args):
     return kwargs
 
 
-def render_template(templ_str, kwargs):
+def render_template(path, kwargs):
     """
-    Render from a string representing the template and a dictionary of kwargs
+    Render from a template file and a dictionary of kwargs
     """
-    return jinja2.Template(templ_str).render(**kwargs)
+    dirname, fname = os.path.split(path)
+
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(dirname))
+    out_str = env.get_template(fname).render(**kwargs)
+
+    return out_str
 
 
 def main():
@@ -42,9 +48,7 @@ def main():
     args, unknown = parser.parse_known_args()
 
     kwargs = parse_unknown(unknown)
-
-    templ_str = open(args.input).read()
-    out_str = render_template(templ_str, kwargs)
+    out_str = render_template(args.input, kwargs)
     open(args.output, 'w').write(out_str + '\n')
 
     return 0
