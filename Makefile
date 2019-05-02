@@ -13,6 +13,16 @@ LIBS = alsa
 CFLAGS = -std=gnu99 -Wall -pedantic -Wextra `pkg-config --cflags ${LIBS}`
 LDFLAGS = `pkg-config --libs ${LIBS}`
 
+CC = gcc
+J2C = python render_template.py
+JSC = closure-compiler
+CSSC = sass
+TTFC = pyftsubset
+
+JSC_OPTS = --compilation_level ADVANCED_OPTIMIZATIONS
+CSSC_OPTS = --style compressed --sourcemap=none
+TTFC_OPTS = --text=$(kept_chars)
+
 font_uri = https://fonts.gstatic.com/s/opensans/v16/mem8YaGs126MiZpBA-UFVZ0e.ttf
 
 src_dir = src
@@ -62,9 +72,7 @@ system: $(nginx_conf) $(systemd_unit)
 $(daemon): $(daemon_template)
 	@echo --- preparing server script
 	mkdir -p $(build_dir)/bin
-	python render_template.py \
-		$(daemon_template) \
-		$(daemon) \
+	$(J2C) $(daemon_template) $(daemon) \
 		--port $(ws_port) \
 		--install_dir \"$(install_dir)\"
 	chmod +x $(daemon)
@@ -72,7 +80,7 @@ $(daemon): $(daemon_template)
 $(alsa_events): $(server_src)/alsa_events.c
 	@echo --- building alsa monitorer
 	mkdir -p $(bin_dir)
-	gcc $(monitor_src) $(CFLAGS) -o $(alsa_events) $(LDFLAGS)
+	$(CC) $(monitor_src) $(CFLAGS) -o $(alsa_events) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
@@ -81,7 +89,7 @@ $(full_font):
 
 $(font): $(full_font)
 	@echo --- subsetting font
-	pyftsubset $(full_font) --text=$(kept_chars) --output-file=$(font)
+	$(TTFC) $(full_font) $(TTFC_OPTS) --output-file=$(font)
 
 $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 	@echo --- rendering index.html
@@ -89,44 +97,32 @@ $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 	@mkdir -p $(tmp_dir)
 	@cp $(index_template) $(tmp_index)
 	@cp $(icon_src) $(tmp_dir)
-	python render_template.py $(tmp_index) $(index_html)
+	$(J2C) $(tmp_index) $(index_html)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
 	mkdir -p $(www_dir)
 	$(eval tmp := $(shell mktemp))
 	@echo 'const port = $(ws_port);' > $(tmp)
-	/usr/bin/closure-compiler \
-		--compilation_level ADVANCED_OPTIMIZATIONS \
-		--js $(tmp) \
-		--js $(js_src) \
-		--js_output_file $(main_js)
+	$(JSC) $(JSC_OPTS) --js $(tmp) --js $(js_src) --js_output_file $(main_js)
 	@rm $(tmp)
 
 $(style): $(style_src)
 	@echo -- building style.css
 	mkdir -p $(www_dir)
-	/usr/bin/sass \
-		--style compressed \
-		--sourcemap=none \
-		$(style_src) \
-		$(style)
+	$(CSSC) $(CSSC_OPTS) $(style_src) $(style)
 
 $(nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
 	mkdir -p $(share)
-	python render_template.py \
-		$(nginx_template) \
-		$(nginx_conf) \
+	$(J2C) $(nginx_template) $(nginx_conf) \
 		--port $(ui_port) \
 		--install_dir $(install_dir)
 
 $(systemd_unit): $(unit_template)
 	@echo --- rendering systemd unit file
 	mkdir -p $(systemd_dir)
-	python render_template.py \
-	    $(unit_template) \
-	    $(systemd_unit) \
+	$(J2C) $(unit_template) $(systemd_unit) \
 	    --user $(user) \
 	    --install_dir $(install_dir) \
 	    --host $(ws_host) \
