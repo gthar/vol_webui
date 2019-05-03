@@ -6,7 +6,7 @@ After = systemd-user-sessions.service
 User = {{ user }}
 Group = {{ user }}
 Type = simple
-ExecStart = {{ install_dir }}/bin/vol_webui_d --host {{ host }} --mixer {{ mixer }} --card {{ card }}
+ExecStart = {{ prefix }}/bin/vol_webui_d --host {{ host }} --mixer {{ mixer }} --card {{ card }}
 Restart = on-failure
 RestartSec = 15
 

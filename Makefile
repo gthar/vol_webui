@@ -1,5 +1,5 @@
 build_dir = build
-install_dir = /home/rilla/Code/python/vol_webui/build
+prefix = /home/rilla/Code/python/vol_webui/build
 venv = env
 
 ui_port = 4567
@@ -100,7 +100,7 @@ $(daemon_script): $(daemon_template)
 	@mkdir -p $(build_dir)/bin
 	$(J2C) $(daemon_template) $(daemon_script) \
 		--port $(ws_port) \
-		--install_dir \"$(install_dir)\"
+		--prefix \"$(prefix)\"
 	chmod +x $(daemon_script)
 
 $(alsa_events_o): $(monitor_src)
@@ -152,14 +152,14 @@ $(nginx_conf): $(nginx_template)
 	@mkdir -p $(share)
 	$(J2C) $(nginx_template) $(nginx_conf) \
 		--port $(ui_port) \
-		--install_dir $(install_dir)
+		--prefix $(prefix)
 
 $(systemd_unit): $(unit_template)
 	@echo --- rendering systemd unit file
 	@mkdir -p $(systemd_dir)
 	$(J2C) $(unit_template) $(systemd_unit) \
 	    --user $(user) \
-	    --install_dir $(install_dir) \
+	    --prefix $(prefix) \
 	    --host $(ws_host) \
 	    --mixer $(mixer) \
 	    --card $(card)

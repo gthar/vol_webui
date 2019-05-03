@@ -16,7 +16,7 @@ import websockets
 
 # These two will be hardcoded resulting file. This allows me to have
 # the client javascript sent as a static file
-INSTALL_DIR = {{ install_dir }}
+PREFIX = {{ prefix }}
 PORT = {{ port }}
 
 
@@ -56,7 +56,7 @@ async def producer(mixer, card, connected):
     """
 
     print("starting monitor loop")
-    cmd = INSTALL_DIR + "/bin/alsa_events"
+    cmd = PREFIX + "/bin/alsa_events"
     vol, mute = query_mixer(mixer)
 
     proc = await asyncio.create_subprocess_exec(
