@@ -15,6 +15,7 @@ make
 * fonttools
 * jinja2
 * SASS
+* minify
 * alsa
 * gcc
 * Google Closure Compiler

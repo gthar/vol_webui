@@ -18,6 +18,7 @@ J2C = python render_template.py
 JSC = closure-compiler
 CSSC = sass
 TTFC = pyftsubset
+HTMLC = minify
 
 JSC_OPTS = --compilation_level ADVANCED_OPTIMIZATIONS
 CSSC_OPTS = --style compressed --sourcemap=none
@@ -47,10 +48,12 @@ www_dir = $(share)/www
 tmp_dir = temp
 tmp_index = $(tmp_dir)/index.html.jinja2
 
-index_html = $(www_dir)/index.html
+index_html = $(tmp_dir)/index.html
 main_js = $(tmp_dir)/main.js
 style = $(tmp_dir)/style.css
 font = $(www_dir)/open_sans.ttf
+
+main_page = $(www_dir)/index.html
 
 systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/vol_webui.service
@@ -65,7 +68,7 @@ all: server client system
 
 server: $(daemon) $(alsa_events)
 
-client: $(index_html) $(font)
+client: $(main_page) $(font)
 
 system: $(nginx_conf) $(systemd_unit)
 
@@ -90,6 +93,10 @@ $(full_font):
 $(font): $(full_font)
 	@echo --- subsetting font
 	$(TTFC) $(full_font) $(TTFC_OPTS) --output-file=$(font)
+
+$(main_page): $(index_html)
+	@echo --- minifying index.html
+	$(HTMLC) --output $(main_page) $(index_html)
 
 $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 	@echo --- rendering index.html
