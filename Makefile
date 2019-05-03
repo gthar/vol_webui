@@ -71,6 +71,8 @@ server: $(daemon) $(alsa_events)
 
 client: $(main_page) $(font)
 
+all_but_c: system client $(daemon)
+
 system: $(nginx_conf) $(systemd_unit)
 
 $(daemon): $(daemon_template)
