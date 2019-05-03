@@ -1,5 +1,6 @@
-install_dir = /home/rilla/Code/python/vol_webui/build
 build_dir = build
+install_dir = /home/rilla/Code/python/vol_webui/build
+venv = env
 
 ui_port = 4567
 ws_port = 6789
@@ -10,8 +11,8 @@ card = hw:0
 kept_chars = "0123456789M()"
 
 LIBS = alsa
-CFLAGS = -std=gnu99 -Wall -pedantic -Wextra `pkg-config --cflags ${LIBS}`
-LDFLAGS = `pkg-config --libs ${LIBS}`
+CFLAGS = -std=gnu99 -Wall -pedantic -Wextra `pkg-config --cflags $(LIBS)`
+LDFLAGS = `pkg-config --libs $(LIBS)`
 
 CC = gcc
 J2C = python render_template.py
@@ -60,10 +61,17 @@ systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/vol_webui.service
 
 bin_dir = $(build_dir)/bin
-daemon = $(bin_dir)/vol_webui_d.py
+daemon = $(bin_dir)/vol_webui_d
+daemon_script = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
 
 full_font = $(tmp_dir)/OpenSans.ttf
+
+activate_venv = source $(venv)/bin/activate
+py_requirements = requirements.txt
+py_version = 3.7
+py_path = `which python$(py_version)`
+bash = '\#!/usr/bin/env bash'
 
 all: server client system
 
@@ -75,13 +83,25 @@ all_but_c: system client $(daemon)
 
 system: $(nginx_conf) $(systemd_unit)
 
-$(daemon): $(daemon_template)
+$(venv): $(py_requirements)
+	virtualenv -p $(py_path) $(venv)
+	$(activate_venv); \
+		pip install -r $(py_requirements)
+
+$(daemon): $(daemon_script)
+	@echo --- building wrapper script
+	echo $(bash) > $(daemon)
+	echo $(activate_venv) >> $(daemon)
+	echo './$(daemon_script) "$$@"' >> $(daemon)
+	chmod +x $(daemon)
+
+$(daemon_script): $(daemon_template)
 	@echo --- preparing server script
 	@mkdir -p $(build_dir)/bin
-	$(J2C) $(daemon_template) $(daemon) \
+	$(J2C) $(daemon_template) $(daemon_script) \
 		--port $(ws_port) \
 		--install_dir \"$(install_dir)\"
-	chmod +x $(daemon)
+	chmod +x $(daemon_script)
 
 $(alsa_events_o): $(monitor_src)
 	@echo --- building alsa monitorer
@@ -147,3 +167,4 @@ $(systemd_unit): $(unit_template)
 clean:
 	rm -rf $(build_dir)
 	rm -rf $(tmp_dir)
+	rm -rf $(venv)
