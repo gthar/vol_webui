@@ -1,6 +1,12 @@
+progname = vol_webui
 build_dir = build
+#prefix = /usr/local
 prefix = /home/rilla/Code/python/vol_webui/build
 venv = env
+nginx_sites = /etc/nginx/sites-enabled
+
+stow_dir = $(prefix)/stow
+install_dir = $(stow_dir)/$(progname)
 
 ui_port = 4567
 ws_port = 6789
@@ -20,10 +26,12 @@ JSC = closure-compiler
 CSSC = sass
 TTFC = pyftsubset
 HTMLC = minify
+STOW = stow
 
 JSC_OPTS = --compilation_level ADVANCED_OPTIMIZATIONS
 CSSC_OPTS = --style compressed --sourcemap=none
 TTFC_OPTS = --text=$(kept_chars)
+STOW_OPTS = --dir $(stow_dir) --target $(prefix)
 
 font_uri = https://fonts.gstatic.com/s/opensans/v16/mem8YaGs126MiZpBA-UFVZ0e.ttf
 
@@ -35,16 +43,21 @@ monitor_src = $(server_src)/alsa_events.c
 daemon_template = $(server_src)/vol_webui_d.py.jinja2
 
 nginx_template = $(src_dir)/nginx.conf.jinja2
-unit_template = $(src_dir)/vol_webui.service.jinja2
+unit_template = $(src_dir)/$(progname).service.jinja2
 
 index_template = $(client_src)/index.html.jinja2
 js_src = $(client_src)/main.js
 style_src = $(client_src)/style.scss
 icon_src = $(client_src)/icon.svg
 
-share = $(build_dir)/share/vol_webui
-nginx_conf = $(share)/nginx.conf
-www_dir = $(share)/www
+share = share/$(progname)
+build_share = $(build_dir)/$(share)
+
+nginx_conf = nginx.conf
+build_nginx_conf = $(build_share)/$(nginx_conf)
+final_nginx_conf = $(prefix)/$(share)/$(nginx_conf)
+
+www_dir = $(build_share)/www
 
 tmp_dir = temp
 alsa_events_o = $(tmp_dir)/alsa_events.o
@@ -58,7 +71,7 @@ font = $(www_dir)/open_sans.ttf
 main_page = $(www_dir)/index.html
 
 systemd_dir = $(build_dir)/lib/systemd/system
-systemd_unit = $(systemd_dir)/vol_webui.service
+systemd_unit = $(systemd_dir)/$(progname).service
 
 bin_dir = $(build_dir)/bin
 daemon = $(bin_dir)/vol_webui_d
@@ -81,7 +94,7 @@ client: $(main_page) $(font)
 
 all_but_c: system client $(daemon)
 
-system: $(nginx_conf) $(systemd_unit)
+system: $(build_nginx_conf) $(systemd_unit)
 
 $(venv): $(py_requirements)
 	virtualenv -p $(py_path) $(venv)
@@ -147,10 +160,10 @@ $(style): $(style_src)
 	@mkdir -p $(www_dir)
 	$(CSSC) $(CSSC_OPTS) $(style_src) $(style)
 
-$(nginx_conf): $(nginx_template)
+$(build_nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
-	@mkdir -p $(share)
-	$(J2C) $(nginx_template) $(nginx_conf) \
+	@mkdir -p $(build_share)
+	$(J2C) $(nginx_template) $(build_nginx_conf) \
 		--port $(ui_port) \
 		--prefix $(prefix)
 
@@ -163,6 +176,14 @@ $(systemd_unit): $(unit_template)
 	    --host $(ws_host) \
 	    --mixer $(mixer) \
 	    --card $(card)
+
+install: all $(venv)
+	mkdir -p $(install_dir)
+	cp $(build_dir)/* $(install_dir)
+	$(STOW) $(STOW_OPTS) $(progname)
+	ln -s $(final_nginx_conf) $(nginx_sites)/$(progname).conf
+	systemctl enable $(progname).service
+	systemctl start $(progname).service
 
 clean:
 	rm -rf $(build_dir)
