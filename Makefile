@@ -46,6 +46,7 @@ nginx_conf = $(share)/nginx.conf
 www_dir = $(share)/www
 
 tmp_dir = temp
+alsa_events_o = $(tmp_dir)/alsa_events.o
 tmp_index = $(tmp_dir)/index.html.jinja2
 
 index_html = $(tmp_dir)/index.html
@@ -74,20 +75,25 @@ system: $(nginx_conf) $(systemd_unit)
 
 $(daemon): $(daemon_template)
 	@echo --- preparing server script
-	mkdir -p $(build_dir)/bin
+	@mkdir -p $(build_dir)/bin
 	$(J2C) $(daemon_template) $(daemon) \
 		--port $(ws_port) \
 		--install_dir \"$(install_dir)\"
 	chmod +x $(daemon)
 
-$(alsa_events): $(server_src)/alsa_events.c
+$(alsa_events_o): $(monitor_src)
 	@echo --- building alsa monitorer
-	mkdir -p $(bin_dir)
-	$(CC) $(monitor_src) $(CFLAGS) -o $(alsa_events) $(LDFLAGS)
+	@mkdir -p $(tmp_dir)
+	$(CC) $(CFLAGS) -c $(monitor_src) -o $(alsa_events_o)
+
+$(alsa_events): $(alsa_events_o)
+	@echo --- linking alsa monitorer
+	@mkdir -p $(bin_dir)
+	$(CC) $(alsa_events_o) -o $(alsa_events) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
-	mkdir -p $(tmp_dir)
+	@mkdir -p $(tmp_dir)
 	wget -O $(full_font) $(font_uri)
 
 $(font): $(full_font)
@@ -108,7 +114,7 @@ $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
-	mkdir -p $(www_dir)
+	@mkdir -p $(www_dir)
 	$(eval tmp := $(shell mktemp))
 	@echo 'const port = $(ws_port);' > $(tmp)
 	$(JSC) $(JSC_OPTS) --js $(tmp) --js $(js_src) --js_output_file $(main_js)
@@ -116,19 +122,19 @@ $(main_js): $(js_src)
 
 $(style): $(style_src)
 	@echo -- building style.css
-	mkdir -p $(www_dir)
+	@mkdir -p $(www_dir)
 	$(CSSC) $(CSSC_OPTS) $(style_src) $(style)
 
 $(nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
-	mkdir -p $(share)
+	@mkdir -p $(share)
 	$(J2C) $(nginx_template) $(nginx_conf) \
 		--port $(ui_port) \
 		--install_dir $(install_dir)
 
 $(systemd_unit): $(unit_template)
 	@echo --- rendering systemd unit file
-	mkdir -p $(systemd_dir)
+	@mkdir -p $(systemd_dir)
 	$(J2C) $(unit_template) $(systemd_unit) \
 	    --user $(user) \
 	    --install_dir $(install_dir) \
