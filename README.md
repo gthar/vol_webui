@@ -29,4 +29,3 @@ make
 ## TODO
 * Use a proper logger
 * Test server on the pi
-* install target
