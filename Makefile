@@ -69,7 +69,7 @@ tmp_index = $(tmp_dir)/index.html.jinja2
 index_html = $(tmp_dir)/index.html
 main_js = $(tmp_dir)/main.js
 style = $(tmp_dir)/style.css
-font = $(build_www)/open_sans.ttf
+font = $(build_www)/font.ttf
 
 main_page = $(build_www)/index.html
 
@@ -80,7 +80,7 @@ bin_dir = $(build_dir)/bin
 daemon = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
 
-full_font = $(tmp_dir)/OpenSans.ttf
+full_font = $(tmp_dir)/full_font.ttf
 
 activate_venv = . $(venv)/bin/activate
 py_requirements = requirements.txt
