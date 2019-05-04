@@ -52,12 +52,15 @@ icon_src = $(client_src)/icon.svg
 
 share = share/$(progname)
 build_share = $(build_dir)/$(share)
+install_share = $(prefix)/$(share)
 
 nginx_conf = nginx.conf
 build_nginx_conf = $(build_share)/$(nginx_conf)
-final_nginx_conf = $(prefix)/$(share)/$(nginx_conf)
+install_nginx_conf = $(install_share)/$(nginx_conf)
 
-www_dir = $(build_share)/www
+www = www;
+build_www = $(build_share)/$(www)
+install_www = $(install_share)/$(www)
 
 tmp_dir = temp
 alsa_events_o = $(tmp_dir)/alsa_events.o
@@ -161,7 +164,7 @@ $(build_nginx_conf): $(nginx_template)
 	@mkdir -p $(build_share)
 	$(J2C) $(nginx_template) $(build_nginx_conf) \
 		--port $(ui_port) \
-		--prefix $(prefix)
+		--web_dir $(install_www)
 
 $(systemd_unit): $(unit_template)
 	@echo --- rendering systemd unit file
@@ -177,7 +180,7 @@ install: all $(venv)
 	mkdir -p $(install_dir)
 	cp $(build_dir)/* $(install_dir)
 	$(STOW) $(STOW_OPTS) $(progname)
-	ln -s $(final_nginx_conf) $(nginx_sites)/$(progname).conf
+	ln -s $(install_nginx_conf) $(nginx_sites)/$(progname).conf
 	systemctl enable $(progname).service
 	systemctl start $(progname).service
 

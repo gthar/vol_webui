@@ -1,6 +1,6 @@
 server {
     listen {{ port }};
-    root {{ prefix }}/share/vol_webui/www;
+    root {{ web_dir }};
     location / {
         index.html;
     }
