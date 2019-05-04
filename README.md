@@ -6,10 +6,17 @@ Intended to be run by the user `volume`.
 Create if needed with: `useradd -M -G audio -s /usr/sbin/nologin volume`
 
 ## Build and install
-make
+In other not to bloat my Pi installation and to avoid the hassle of
+cross-compiling C code, I've decided to build most of this from my laptop, then
+transfer the filed to the Pi and compile the C code there.
 
-* render_template: script use to render jinja2 templates
-* install.sh: copy the built files and install it with stow
+Make install creates a virtualenv for the package dependencies and installs the
+whole thing with stow.
+
+* `make remote clean`
+* copy over to the RaspberryPi and continue there
+* `make compiled clean`
+* `sudo make install`
 
 ## Build/install dependencies
 * fonttools
@@ -22,9 +29,10 @@ make
 * wget
 
 ## Run dependencies
-* what is specified in requirements.txt
+* systemd
 * alsa
 * nginx
+* python3.7
 
 ## TODO
 * Use a proper logger

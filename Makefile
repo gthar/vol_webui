@@ -92,7 +92,9 @@ server: $(daemon) $(alsa_events)
 
 client: $(main_page) $(font)
 
-all_but_c: system client $(daemon)
+remote: system client $(daemon)
+
+compiled: $(alsa_events)
 
 system: $(build_nginx_conf) $(systemd_unit)
 
@@ -180,6 +182,8 @@ install: all $(venv)
 	systemctl start $(progname).service
 
 clean:
-	rm -rf $(build_dir)
 	rm -rf $(tmp_dir)
+
+reset: clean
+	rm -rf $(build_dir)
 	rm -rf $(venv)
