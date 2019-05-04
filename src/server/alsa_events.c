@@ -31,27 +31,23 @@ bool check_event (snd_ctl_t * ctl)
     snd_ctl_poll_descriptors(ctl, &fd, 1);
 
     err = poll(&fd, 1, -1);
-    if (err <= 0) {
+    if (err <= 0)
         exit(err);
-    }
 
     snd_ctl_poll_descriptors_revents(ctl, &fd, 1, &revents);
     if (revents & POLLIN) {
 
         snd_ctl_event_alloca(&event);
         err = snd_ctl_read(ctl, event);
-        if (err < 0) {
+        if (err < 0)
             exit(err);
-        }
 
-        if (snd_ctl_event_get_type(event) != SND_CTL_EVENT_ELEM) {
+        if (snd_ctl_event_get_type(event) != SND_CTL_EVENT_ELEM)
             return false;
-        }
 
         mask = snd_ctl_event_elem_get_mask(event);
-        if (!(mask & SND_CTL_EVENT_MASK_VALUE)) {
+        if (!(mask & SND_CTL_EVENT_MASK_VALUE))
             return false;
-        }
 
         return true;
 
