@@ -1,7 +1,7 @@
 progname = vol_webui
 build_dir = build
 #prefix = /usr/local
-prefix = /home/rilla/Code/python/vol_webui/build
+prefix = $(build_dir)
 venv = env
 nginx_sites = /etc/nginx/sites-enabled
 
@@ -74,17 +74,17 @@ systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/$(progname).service
 
 bin_dir = $(build_dir)/bin
-daemon = $(bin_dir)/vol_webui_d
-daemon_script = $(bin_dir)/vol_webui_d.py
+daemon = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
 
 full_font = $(tmp_dir)/OpenSans.ttf
 
-activate_venv = source $(venv)/bin/activate
+activate_venv = . $(venv)/bin/activate
 py_requirements = requirements.txt
 py_version = 3.7
 py_path = `which python$(py_version)`
 bash = '\#!/usr/bin/env bash'
+interpreter = $(venv)/bin/python$(py_version)
 
 all: server client system
 
@@ -101,20 +101,14 @@ $(venv): $(py_requirements)
 	$(activate_venv); \
 		pip install -r $(py_requirements)
 
-$(daemon): $(daemon_script)
-	@echo --- building wrapper script
-	echo $(bash) > $(daemon)
-	echo $(activate_venv) >> $(daemon)
-	echo './$(daemon_script) "$$@"' >> $(daemon)
-	chmod +x $(daemon)
-
-$(daemon_script): $(daemon_template)
+$(daemon): $(daemon_template)
 	@echo --- preparing server script
 	@mkdir -p $(build_dir)/bin
-	$(J2C) $(daemon_template) $(daemon_script) \
+	$(J2C) $(daemon_template) $(daemon) \
 		--port $(ws_port) \
-		--prefix \"$(prefix)\"
-	chmod +x $(daemon_script)
+		--prefix \"$(prefix)\" \
+		--interpreter $(interpreter)
+	chmod +x $(daemon)
 
 $(alsa_events_o): $(monitor_src)
 	@echo --- building alsa monitorer
