@@ -58,7 +58,7 @@ nginx_conf = nginx.conf
 build_nginx_conf = $(build_share)/$(nginx_conf)
 install_nginx_conf = $(install_share)/$(nginx_conf)
 
-www = www;
+www = www
 build_www = $(build_share)/$(www)
 install_www = $(install_share)/$(www)
 
@@ -69,9 +69,9 @@ tmp_index = $(tmp_dir)/index.html.jinja2
 index_html = $(tmp_dir)/index.html
 main_js = $(tmp_dir)/main.js
 style = $(tmp_dir)/style.css
-font = $(www_dir)/open_sans.ttf
+font = $(build_www)/open_sans.ttf
 
-main_page = $(www_dir)/index.html
+main_page = $(build_www)/index.html
 
 systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/$(progname).service
@@ -108,7 +108,7 @@ $(venv): $(py_requirements)
 
 $(daemon): $(daemon_template)
 	@echo --- preparing server script
-	@mkdir -p $(build_dir)/bin
+	@mkdir -p $(bin_dir)
 	$(J2C) $(daemon_template) $(daemon) \
 		--port $(ws_port) \
 		--prefix \"$(prefix)\" \
@@ -132,15 +132,16 @@ $(full_font):
 
 $(font): $(full_font)
 	@echo --- subsetting font
+	@mkdir -p $(build_www)
 	$(TTFC) $(full_font) $(TTFC_OPTS) --output-file=$(font)
 
 $(main_page): $(index_html)
 	@echo --- minifying index.html
+	@mkdir -p $(build_www)
 	$(HTMLC) --output $(main_page) $(index_html)
 
 $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 	@echo --- rendering index.html
-	@mkdir -p $(www_dir)
 	@mkdir -p $(tmp_dir)
 	@cp $(index_template) $(tmp_index)
 	@cp $(icon_src) $(tmp_dir)
@@ -148,7 +149,7 @@ $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
-	@mkdir -p $(www_dir)
+	@mkdir -p $(tmp_dir)
 	$(eval tmp := $(shell mktemp))
 	@echo 'const port = $(ws_port);' > $(tmp)
 	$(JSC) $(JSC_OPTS) --js $(tmp) --js $(js_src) --js_output_file $(main_js)
@@ -156,7 +157,7 @@ $(main_js): $(js_src)
 
 $(style): $(style_src)
 	@echo -- building style.css
-	@mkdir -p $(www_dir)
+	@mkdir -p $(tmp_dir)
 	$(CSSC) $(CSSC_OPTS) $(style_src) $(style)
 
 $(build_nginx_conf): $(nginx_template)
