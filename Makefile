@@ -10,9 +10,9 @@ install_dir = $(stow_dir)/$(progname)
 
 ui_port = 4567
 ws_port = 6789
-ws_host = localhost
+ws_host = 0.0.0.0
 user = volume
-mixer = Master
+mixer = Digital
 card = hw:0
 kept_chars = "0123456789M()"
 
