@@ -49,7 +49,24 @@ def mk_msg(val_type, value):
     return json.dumps({'type': val_type, 'value': value})
 
 
-async def producer(card, device, mixer, connected):
+def parse_monitor_out(line):
+    """
+    Parse one line of the monitorer output
+    """
+    param, val = line.decode().split()
+    return param, int(val)
+
+
+def vol_scaler(state):
+    """
+    Scale the volume to the range 0-100
+    """
+    range = state["pmax"] - state["pmin"]
+    scaled = (state["vol"] - state["pmin"]) / range * 100
+    return int(scaled)
+
+
+async def producer(card, device, mixer, connected, state):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
     volume and mute state and broadcast any changes to all clients
@@ -57,37 +74,47 @@ async def producer(card, device, mixer, connected):
 
     print("starting monitor loop")
     cmd = PREFIX + "/bin/alsa_events"
-    vol, mute = query_mixer(mixer)
 
     proc = await asyncio.create_subprocess_exec(
         cmd, card, device, mixer,
         stdout=asyncio.subprocess.PIPE
     )
-    async for _ in proc.stdout:
-        new_vol, new_mute = query_mixer(mixer)
 
-        if new_vol != vol:
-            print("vol changed to", new_vol)
-            await broadcast(connected, mk_msg('volume', new_vol))
-            vol = new_vol
+    # read and store the initial values
+    for _ in range(3):
+        line = await proc.stdout.readline()
+        param, val = parse_monitor_out(line)
+        state[param] = val
 
-        if new_mute != mute:
-            print("mute changed to", new_mute)
-            await broadcast(connected, mk_msg('mute', new_mute))
-            mute = new_mute
+    async for line in proc.stdout:
+
+        param, val = parse_monitor_out(line)
+        state[param] = val
+
+        if param == "vol":
+            vol = vol_scaler(state)
+            print("vol changed to", vol)
+            await broadcast(connected, mk_msg('volume', vol))
+
+        if param == "on":
+            mute = not state["on"]
+            print("mute changed to", mute)
+            await broadcast(connected, mk_msg('mute', mute))
 
     returncode = await proc.wait()
     return returncode
 
 
-async def handler(websocket, _, connected, mixer_name):
+async def handler(websocket, _, connected, mixer_name, state):
     """
     WebSocket handler. Watch for changes in the clients and update the volume
     accordingly
     """
     connected.add(websocket)
     try:
-        vol, mute = query_mixer(mixer_name)
+        vol = vol_scaler(state)
+        mute = not state["on"]
+        #vol, mute = query_mixer(mixer_name)
         await websocket.send(mk_msg('volume', vol))
         await websocket.send(mk_msg('mute', mute))
 
@@ -122,10 +149,11 @@ def main():
     args = parser.parse_args()
 
     connected = set()
+    state = {}
     loop = asyncio.get_event_loop()
-    loop.create_task(producer(args.card, args.device, args.mixer, connected))
+    loop.create_task(producer(args.card, args.device, args.mixer, connected, state))
     loop.run_until_complete(websockets.serve(
-        functools.partial(handler, connected=connected, mixer_name=args.mixer),
+        functools.partial(handler, connected=connected, mixer_name=args.mixer, state=state),
         args.host,
         PORT
     ))

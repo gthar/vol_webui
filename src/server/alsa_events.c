@@ -82,7 +82,7 @@ long int check_vol(snd_mixer_elem_t *elem, const long int old_vol)
     long int vol;
     snd_mixer_selem_get_playback_volume(elem, 0, &vol);
     if (vol != old_vol) {
-        fprintf(stdout, "vol: %ld\n", vol);
+        fprintf(stdout, "vol %ld\n", vol);
         fflush(stdout);
     }
     return vol;
@@ -93,7 +93,7 @@ int check_on(snd_mixer_elem_t *elem, const int old_on)
     int on;
     snd_mixer_selem_get_playback_switch(elem, 0, &on);
     if (on != old_on) {
-        fprintf(stdout, "on: %d\n", on);
+        fprintf(stdout, "on %d\n", on);
         fflush(stdout);
     }
     return on;
@@ -127,9 +127,9 @@ int monitor(const char *card, const char *device, const char *mixer)
     }
 
     snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
-    fprintf(stdout, "pmin: %ld\n", pmin);
+    fprintf(stdout, "pmin %ld\n", pmin);
     fflush(stdout);
-    fprintf(stdout, "pmax: %ld\n", pmax);
+    fprintf(stdout, "pmax %ld\n", pmax);
     fflush(stdout);
 
     vol = check_vol(elem, vol);
