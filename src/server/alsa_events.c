@@ -35,6 +35,7 @@ bool check_event (snd_ctl_t *ctl)
 
     snd_ctl_poll_descriptors(ctl, &fd, 1);
 
+    // we wait here for an event
     handle_error(poll(&fd, 1, -1), "Polling error\n");
 
     snd_ctl_poll_descriptors_revents(ctl, &fd, 1, &revents);
@@ -83,7 +84,6 @@ long int check_vol(snd_mixer_elem_t *elem, const long int old_vol)
     snd_mixer_selem_get_playback_volume(elem, 0, &vol);
     if (vol != old_vol) {
         fprintf(stdout, "vol %ld\n", vol);
-        fflush(stdout);
     }
     return vol;
 }
@@ -126,14 +126,13 @@ int monitor(const char *card, const char *device, const char *mixer)
         exit(-1);
     }
 
+    // initialize the values
     snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
     fprintf(stdout, "pmin %ld\n", pmin);
-    fflush(stdout);
     fprintf(stdout, "pmax %ld\n", pmax);
-    fflush(stdout);
-
     vol = check_vol(elem, vol);
     on = check_on(elem, on);
+    fflush(stdout);
 
     snd_mixer_close(handle);
 
@@ -145,6 +144,7 @@ int monitor(const char *card, const char *device, const char *mixer)
             elem = get_elem(handle, mixer);
             vol = check_vol(elem, vol);
             on = check_on(elem, on);
+            fflush(stdout);
             snd_mixer_close(handle);
         }
     }
