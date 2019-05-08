@@ -6,7 +6,7 @@ After = systemd-user-sessions.service
 User = {{ user }}
 Group = {{ user }}
 Type = simple
-ExecStart = {{ prefix }}/bin/vol_webui_d.py --host {{ host }} --mixer {{ mixer }} --card {{ card }}
+ExecStart = {{ prefix }}/bin/vol_webui_d.py --host {{ host }} --card {{ card }} --device {{ device }} --mixer {{ mixer }}
 Restart = on-failure
 RestartSec = 15
 

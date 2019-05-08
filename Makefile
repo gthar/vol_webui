@@ -12,8 +12,9 @@ ui_port = 4567
 ws_port = 6789
 ws_host = 0.0.0.0
 user = volume
-mixer = Digital
 card = hw:0
+device = default
+mixer = Digital
 kept_chars = "0123456789M()"
 
 LIBS = alsa
@@ -174,8 +175,9 @@ $(systemd_unit): $(unit_template)
 	    --user $(user) \
 	    --prefix $(prefix) \
 	    --host $(ws_host) \
-	    --mixer $(mixer) \
-	    --card $(card)
+	    --card $(card) \
+	    --device $(device) \
+	    --mixer $(mixer)
 
 install: all $(venv)
 	mkdir -p $(install_dir)

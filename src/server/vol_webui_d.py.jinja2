@@ -49,7 +49,7 @@ def mk_msg(val_type, value):
     return json.dumps({'type': val_type, 'value': value})
 
 
-async def producer(mixer, card, connected):
+async def producer(card, device, mixer, connected):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
     volume and mute state and broadcast any changes to all clients
@@ -60,7 +60,7 @@ async def producer(mixer, card, connected):
     vol, mute = query_mixer(mixer)
 
     proc = await asyncio.create_subprocess_exec(
-        cmd, card,
+        cmd, card, device, mixer,
         stdout=asyncio.subprocess.PIPE
     )
     async for _ in proc.stdout:
@@ -116,13 +116,14 @@ def main():
 
     parser = argparse.ArgumentParser(description="Volume Web UI")
     parser.add_argument("--host", type=str, default='localhost')
-    parser.add_argument("--mixer", type=str, default='Master')
     parser.add_argument("--card", type=str, default='hw:0')
+    parser.add_argument("--device", type=str, default='default')
+    parser.add_argument("--mixer", type=str, default='Master')
     args = parser.parse_args()
 
     connected = set()
     loop = asyncio.get_event_loop()
-    loop.create_task(producer(args.mixer, args.card, connected))
+    loop.create_task(producer(args.card, args.device, args.mixer, connected))
     loop.run_until_complete(websockets.serve(
         functools.partial(handler, connected=connected, mixer_name=args.mixer),
         args.host,
