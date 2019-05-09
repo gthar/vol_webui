@@ -132,6 +132,7 @@ int monitor(const char *card, const char *device, const char *mixer)
     fprintf(stdout, "pmax %ld\n", pmax);
     vol = check_vol(elem, vol);
     on = check_on(elem, on);
+    fprintf(stdout, "----\n");
     fflush(stdout);
 
     snd_mixer_close(handle);

@@ -53,7 +53,7 @@ def parse_monitor_out(line):
     """
     Parse one line of the monitorer output
     """
-    param, val = line.decode().split()
+    param, val = line.split()
     return param, int(val)
 
 
@@ -81,14 +81,18 @@ async def producer(card, device, mixer, connected, state):
     )
 
     # read and store the initial values
-    for _ in range(3):
-        line = await proc.stdout.readline()
-        param, val = parse_monitor_out(line)
-        state[param] = val
+    delim = '----\n'
+    content = await proc.stdout.readuntil(delim.encode())
+    lines = content.decode().replace(delim, "").strip().split("\n")
+    state = dict(parse_monitor_out(line) for line in lines)
 
     async for line in proc.stdout:
 
-        param, val = parse_monitor_out(line)
+        try:
+            param, val = parse_monitor_out(line.decode())
+        except:
+            continue
+
         state[param] = val
 
         if param == "vol":
