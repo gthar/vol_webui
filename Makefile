@@ -41,6 +41,7 @@ server_src = $(src_dir)/server
 client_src = $(src_dir)/client
 
 monitor_src = $(server_src)/alsa_events.c
+setter_src = $(server_src)/alsa_set.c
 daemon_template = $(server_src)/vol_webui_d.py.jinja2
 
 nginx_template = $(src_dir)/nginx.conf.jinja2
@@ -65,6 +66,7 @@ install_www = $(install_share)/$(www)
 
 tmp_dir = temp
 alsa_events_o = $(tmp_dir)/alsa_events.o
+alsa_set_o = $(tmp_dir)/alsa_set.o
 tmp_index = $(tmp_dir)/index.html.jinja2
 
 index_html = $(tmp_dir)/index.html
@@ -80,6 +82,7 @@ systemd_unit = $(systemd_dir)/$(progname).service
 bin_dir = $(build_dir)/bin
 daemon = $(bin_dir)/vol_webui_d.py
 alsa_events = $(bin_dir)/alsa_events
+alsa_set = $(bin_dir)/alsa_set
 
 full_font = $(tmp_dir)/full_font.ttf
 
@@ -92,13 +95,13 @@ interpreter = $(venv)/bin/python$(py_version)
 
 all: server client system
 
-server: $(daemon) $(alsa_events)
+server: $(daemon) $(alsa_events) $(alsa_set)
 
 client: $(main_page) $(font)
 
 remote: system client $(daemon)
 
-compiled: $(alsa_events)
+compiled: $(alsa_events) $(alsa_set)
 
 system: $(build_nginx_conf) $(systemd_unit)
 
@@ -125,6 +128,16 @@ $(alsa_events): $(alsa_events_o)
 	@echo --- linking alsa monitorer
 	@mkdir -p $(bin_dir)
 	$(CC) $(alsa_events_o) -o $(alsa_events) $(LDFLAGS)
+
+$(alsa_set_o): $(setter_src)
+	@echo --- building alsa setter
+	@mkdir -p $(tmp_dir)
+	$(CC) $(CFLAGS) -c $(setter_src) -o $(alsa_set_o)
+
+$(alsa_set): $(alsa_set_o)
+	@echo --- linking alsa monitorer
+	@mkdir -p $(bin_dir)
+	$(CC) $(alsa_set_o) -o $(alsa_set) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
