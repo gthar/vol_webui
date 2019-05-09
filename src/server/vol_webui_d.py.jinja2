@@ -66,11 +66,12 @@ def vol_scaler(state):
     return int(scaled)
 
 
-async def producer(card, device, mixer, connected, state):
+async def producer(card, device, mixer, connected):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
     volume and mute state and broadcast any changes to all clients
     """
+    global state
 
     print("starting monitor loop")
     cmd = PREFIX + "/bin/alsa_events"
@@ -97,23 +98,24 @@ async def producer(card, device, mixer, connected, state):
 
         if param == "vol":
             vol = vol_scaler(state)
-            print("vol changed to", vol)
+            print("vol changed to {} ({})".format(state["vol"], vol))
             await broadcast(connected, mk_msg('volume', vol))
 
         if param == "on":
             mute = not state["on"]
-            print("mute changed to", mute)
+            print("on changed to {} (mute={})".format(state["on"], mute))
             await broadcast(connected, mk_msg('mute', mute))
 
     returncode = await proc.wait()
     return returncode
 
 
-async def handler(websocket, _, connected, mixer_name, state):
+async def handler(websocket, _, connected, mixer_name):
     """
     WebSocket handler. Watch for changes in the clients and update the volume
     accordingly
     """
+    global state
     connected.add(websocket)
     try:
         vol = vol_scaler(state)
@@ -155,9 +157,16 @@ def main():
     connected = set()
     state = {}
     loop = asyncio.get_event_loop()
-    loop.create_task(producer(args.card, args.device, args.mixer, connected, state))
+    loop.create_task(producer(
+        args.card,
+        args.device,
+        args.mixer,
+        connected))
     loop.run_until_complete(websockets.serve(
-        functools.partial(handler, connected=connected, mixer_name=args.mixer, state=state),
+        functools.partial(
+            handler,
+            connected=connected,
+            mixer_name=args.mixer),
         args.host,
         PORT
     ))
