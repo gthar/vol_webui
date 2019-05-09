@@ -63,7 +63,7 @@ def vol_scaler(state):
     """
     range = state["pmax"] - state["pmin"]
     scaled = (state["vol"] - state["pmin"]) / range * 100
-    return int(scaled)
+    return round(scaled)
 
 
 async def producer(card, device, mixer, connected):
