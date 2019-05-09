@@ -42,6 +42,8 @@ client_src = $(src_dir)/client
 
 monitor_src = $(server_src)/alsa_events.c
 setter_src = $(server_src)/alsa_set.c
+helpers_src = $(server_src)/helpers.c
+helpers_h = $(server_src)/helpers.h
 daemon_template = $(server_src)/vol_webui_d.py.jinja2
 
 nginx_template = $(src_dir)/nginx.conf.jinja2
@@ -67,6 +69,7 @@ install_www = $(install_share)/$(www)
 tmp_dir = temp
 alsa_events_o = $(tmp_dir)/alsa_events.o
 alsa_set_o = $(tmp_dir)/alsa_set.o
+helpers_o = $(tmp_dir)/helpers.o
 tmp_index = $(tmp_dir)/index.html.jinja2
 
 index_html = $(tmp_dir)/index.html
@@ -119,25 +122,29 @@ $(daemon): $(daemon_template)
 		--interpreter $(interpreter)
 	chmod +x $(daemon)
 
-$(alsa_events_o): $(monitor_src)
+$(alsa_events_o): $(monitor_src) $(helpers_h)
 	@echo --- building alsa monitorer
 	@mkdir -p $(tmp_dir)
 	$(CC) $(CFLAGS) -c $(monitor_src) -o $(alsa_events_o)
 
-$(alsa_events): $(alsa_events_o)
+$(alsa_events): $(alsa_events_o) $(helpers_o)
 	@echo --- linking alsa monitorer
 	@mkdir -p $(bin_dir)
-	$(CC) $(alsa_events_o) -o $(alsa_events) $(LDFLAGS)
+	$(CC) $(alsa_events_o) $(helpers_o) -o $(alsa_events) $(LDFLAGS)
 
-$(alsa_set_o): $(setter_src)
+$(alsa_set_o): $(setter_src) $(helpers_h)
 	@echo --- building alsa setter
 	@mkdir -p $(tmp_dir)
 	$(CC) $(CFLAGS) -c $(setter_src) -o $(alsa_set_o)
 
-$(alsa_set): $(alsa_set_o)
+$(helpers_o): $(helpers_src)
+	@mkdir -p $(tmp_dir)
+	$(CC) $(CFLAGS) -c $(helpers_src) -o $(helpers_o)
+
+$(alsa_set): $(alsa_set_o) $(helpers_o)
 	@echo --- linking alsa monitorer
 	@mkdir -p $(bin_dir)
-	$(CC) $(alsa_set_o) -o $(alsa_set) $(LDFLAGS)
+	$(CC) $(alsa_set_o) $(helpers_o) -o $(alsa_set) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
