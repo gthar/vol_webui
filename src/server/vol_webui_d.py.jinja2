@@ -10,7 +10,6 @@ import functools
 import json
 import sys
 
-import alsaaudio
 import websockets
 
 
@@ -18,18 +17,6 @@ import websockets
 # the client javascript sent as a static file
 PREFIX = {{ prefix }}
 PORT = {{ port }}
-
-
-def query_mixer(mixer_name):
-    """
-    Query the current state of the mixer
-    input: mixer_name
-    output: a tuple with the volume (0-100) and the mute state (0/1)
-    """
-    mixer = alsaaudio.Mixer(mixer_name)
-    vol, _ = mixer.getvolume()
-    mute, _ = mixer.getmute()
-    return vol, mute
 
 
 async def broadcast(connected, msg):
@@ -119,7 +106,18 @@ async def producer(card, device, mixer, connected):
     return returncode
 
 
-async def handler(websocket, _, connected, mixer_name):
+async def set_alsa(param, val, device, mixer):
+    """
+    Set either the volume or switch state
+    """
+    cmd = PREFIX + "/bin/alsa_set"
+    await asyncio.create_subprocess_exec(
+        cmd, device, mixer, param, str(val),
+        stdout=asyncio.subprocess.PIPE
+    )
+
+
+async def handler(websocket, _, connected, device, mixer):
     """
     WebSocket handler. Watch for changes in the clients and update the volume
     accordingly
@@ -134,14 +132,14 @@ async def handler(websocket, _, connected, mixer_name):
 
         async for msg in websocket:
             data = json.loads(msg)
-            mixer = alsaaudio.Mixer(mixer_name)
 
             if data['type'] == 'volume':
-                mixer.setvolume(data['value'])
+                vol = vol_unscaler(data['value'], state)
+                await set_alsa("volume", vol, device, mixer)
 
             elif data['type'] == 'mute':
-                mute, _ = mixer.getmute()
-                mixer.setmute(not mute)
+                switch_state = int(not state["switch"])
+                await set_alsa("switch", switch_state, device, mixer)
 
             else:
                 print("unsupported event: {}", data)
@@ -174,7 +172,8 @@ def main():
         functools.partial(
             handler,
             connected=connected,
-            mixer_name=args.mixer),
+            device=args.device,
+            mixer=args.mixer),
         args.host,
         PORT
     ))
