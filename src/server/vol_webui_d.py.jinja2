@@ -17,6 +17,7 @@ import websockets
 # the client javascript sent as a static file
 PREFIX = {{ prefix }}
 PORT = {{ port }}
+MAX_LINEAR_DB_SCALE = 24
 
 
 async def broadcast(connected, msg):
@@ -44,22 +45,26 @@ def parse_monitor_out(line):
     return param, int(val)
 
 
-def vol_scaler(state):
+def vol_scaler(state, method="cube"):
     """
     Scale the volume to the range 0-100
     """
-    range = state["pmax"] - state["pmin"]
-    scaled = (state["volume"] - state["pmin"]) / range * 100
-    return round(scaled)
+    ran = state["pmax"] - state["pmin"]
+    scaled = (state["volume"] - state["pmin"]) / ran
+    if method == "cube":
+        scaled = scaled ** (1/3)
+    return round(scaled * 100)
 
 
-def vol_unscaler(vol, state):
+def vol_unscaler(vol, state, method="cube"):
     """
     Bring back a value scaled as a percentage to a physical volume
     """
     range = state["pmax"] - state["pmin"]
-    scaled = vol / 100 * range + state["pmin"]
-    return round(scaled)
+    scaled = vol / 100
+    if method == "cube":
+        scaled = scaled ** 3
+    return round(scaled * range + state["pmin"])
 
 
 async def producer(card, device, mixer, connected):
