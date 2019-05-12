@@ -62,7 +62,7 @@ def vol_scaler(state):
     Scale the volume to the range 0-100
     """
     range = state["pmax"] - state["pmin"]
-    scaled = (state["vol"] - state["pmin"]) / range * 100
+    scaled = (state["volume"] - state["pmin"]) / range * 100
     return round(scaled)
 
 
@@ -96,14 +96,14 @@ async def producer(card, device, mixer, connected):
 
         state[param] = val
 
-        if param == "vol":
-            vol = vol_scaler(state)
-            print("vol changed to {} ({})".format(state["vol"], vol))
-            await broadcast(connected, mk_msg('volume', vol))
+        if param == "volume":
+            volume = vol_scaler(state)
+            print("vol changed to {} ({})".format(state["volume"], volume))
+            await broadcast(connected, mk_msg('volume', volume))
 
-        if param == "on":
-            mute = not state["on"]
-            print("on changed to {} (mute={})".format(state["on"], mute))
+        if param == "switch":
+            mute = not state["switch"]
+            print("switch changed to {} (mute={})".format(state["switch"], mute))
             await broadcast(connected, mk_msg('mute', mute))
 
     returncode = await proc.wait()
@@ -118,10 +118,9 @@ async def handler(websocket, _, connected, mixer_name):
     global state
     connected.add(websocket)
     try:
-        vol = vol_scaler(state)
-        mute = not state["on"]
-        #vol, mute = query_mixer(mixer_name)
-        await websocket.send(mk_msg('volume', vol))
+        volume = vol_scaler(state)
+        mute = not state["switch"]
+        await websocket.send(mk_msg('volume', volume))
         await websocket.send(mk_msg('mute', mute))
 
         async for msg in websocket:

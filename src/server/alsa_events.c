@@ -50,23 +50,23 @@ bool check_event (snd_ctl_t *ctl)
 
 long int check_vol(snd_mixer_elem_t *elem, const long int old_vol)
 {
-    long int vol;
-    snd_mixer_selem_get_playback_volume(elem, 0, &vol);
-    if (vol != old_vol) {
-        fprintf(stdout, "vol %ld\n", vol);
+    long int volume;
+    snd_mixer_selem_get_playback_volume(elem, 0, &volume);
+    if (volume != old_vol) {
+        fprintf(stdout, "volume %ld\n", volume);
     }
-    return vol;
+    return volume;
 }
 
-int check_on(snd_mixer_elem_t *elem, const int old_on)
+int check_switch(snd_mixer_elem_t *elem, const int old_switch)
 {
-    int on;
-    snd_mixer_selem_get_playback_switch(elem, 0, &on);
-    if (on != old_on) {
-        fprintf(stdout, "on %d\n", on);
+    int new_switch;
+    snd_mixer_selem_get_playback_switch(elem, 0, &new_switch);
+    if (new_switch != old_switch) {
+        fprintf(stdout, "switch %d\n", new_switch);
         fflush(stdout);
     }
-    return on;
+    return new_switch;
 }
 
 void usage ()
@@ -79,8 +79,8 @@ void usage ()
 
 int monitor(const char *card, const char *device, const char *mixer)
 {
-    long vol = -1;
-    int on = -1;
+    long volume = -1;
+    int switch_state = -1;
     long pmin, pmax;
 
     snd_ctl_t *ctl;
@@ -100,8 +100,8 @@ int monitor(const char *card, const char *device, const char *mixer)
     snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
     fprintf(stdout, "pmin %ld\n", pmin);
     fprintf(stdout, "pmax %ld\n", pmax);
-    vol = check_vol(elem, vol);
-    on = check_on(elem, on);
+    volume = check_vol(elem, volume);
+    switch_state = check_switch(elem, switch_state);
     fprintf(stdout, "----\n");
     fflush(stdout);
 
@@ -113,8 +113,8 @@ int monitor(const char *card, const char *device, const char *mixer)
         if (check_event(ctl)) {
             handle = get_handle(device);
             elem = get_elem(handle, mixer);
-            vol = check_vol(elem, vol);
-            on = check_on(elem, on);
+            volume = check_vol(elem, volume);
+            switch_state = check_switch(elem, switch_state);
             fflush(stdout);
             snd_mixer_close(handle);
         }

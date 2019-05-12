@@ -9,7 +9,7 @@ void usage ()
     printf("arguments: device mixer param\n");
     printf("* device (i.e., default)\n");
     printf("* mixer (i.e., Master)\n");
-    printf("* param (i.e., vol)\n");
+    printf("* param (i.e., volume)\n");
     printf("* val (i.e., 5432)\n");
 }
 
@@ -33,7 +33,7 @@ int set_val(const char *device, const char *mixer, const char *param, const char
 
     for (i = 0; i <= SND_MIXER_SCHN_LAST; i++) {
         if (snd_mixer_selem_has_playback_channel(elem, i)) {
-            if (strcmp(param, "vol") == 0) {
+            if (strcmp(param, "volume") == 0) {
                 snd_mixer_selem_set_playback_volume(elem, i, atol(val));
             }
             if (strcmp(param, "switch") == 0) {
