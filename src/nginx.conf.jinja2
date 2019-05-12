@@ -1,7 +1,5 @@
 server {
     listen {{ port }};
     root {{ web_dir }};
-    location / {
-        index.html;
-    }
+    index index.html;
 }

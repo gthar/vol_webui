@@ -1,7 +1,6 @@
 const inc_by = 5;
-const ip = '127.0.0.1';
-//const ip = location.hostname;
-const url = `ws://${ip}:${port}/`
+const ip = location.hostname;
+const url = `ws://${ip}:${port}/`;
 
 const vol_re = /\bvol-.+?\b/g;
 

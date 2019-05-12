@@ -36,4 +36,3 @@ whole thing with stow.
 
 ## TODO
 * Use a proper logger
-* Test server on the pi

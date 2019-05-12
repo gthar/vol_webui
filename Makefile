@@ -1,8 +1,9 @@
 progname = vol_webui
 build_dir = build
-#prefix = /usr/local
-prefix = $(build_dir)
-venv = env
+prefix = /usr/local
+#prefix = $(build_dir)
+venv_dir = /usr/local/opt/virtualenvs
+venv = $(venv_dir)/volume_ctl
 nginx_sites = /etc/nginx/sites-enabled
 
 stow_dir = $(prefix)/stow
@@ -109,6 +110,7 @@ compiled: $(alsa_events) $(alsa_set)
 system: $(build_nginx_conf) $(systemd_unit)
 
 $(venv): $(py_requirements)
+	@mkdir -p $(venv_dir)
 	virtualenv -p $(py_path) $(venv)
 	$(activate_venv); \
 		pip install -r $(py_requirements)
@@ -157,6 +159,7 @@ $(font): $(full_font)
 	$(TTFC) $(full_font) $(TTFC_OPTS) --output-file=$(font)
 
 $(main_page): $(index_html)
+	echo $(main_page)
 	@echo --- minifying index.html
 	@mkdir -p $(build_www)
 	$(HTMLC) --output $(main_page) $(index_html)
@@ -199,15 +202,16 @@ $(systemd_unit): $(unit_template)
 	    --device $(device) \
 	    --mixer $(mixer)
 
-install: all $(venv)
+install: $(venv)
 	mkdir -p $(install_dir)
-	cp $(build_dir)/* $(install_dir)
+	cp -r $(build_dir)/* $(install_dir)
 	$(STOW) $(STOW_OPTS) $(progname)
 
 enable: install
-	ln -s $(install_nginx_conf) $(nginx_sites)/$(progname).conf
 	systemctl enable $(progname).service
 	systemctl start $(progname).service
+	ln -s $(install_nginx_conf) $(nginx_sites)/$(progname).conf
+	systemctl restart nginx.service
 
 clean:
 	rm -rf $(tmp_dir)
