@@ -66,6 +66,15 @@ def vol_scaler(state):
     return round(scaled)
 
 
+def vol_unscaler(vol, state):
+    """
+    Bring back a value scaled as a percentage to a physical volume
+    """
+    range = state["pmax"] - state["pmin"]
+    scaled = vol / 100 * range + state["pmin"]
+    return round(scaled)
+
+
 async def producer(card, device, mixer, connected):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
