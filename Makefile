@@ -203,6 +203,8 @@ install: all $(venv)
 	mkdir -p $(install_dir)
 	cp $(build_dir)/* $(install_dir)
 	$(STOW) $(STOW_OPTS) $(progname)
+
+enable: install
 	ln -s $(install_nginx_conf) $(nginx_sites)/$(progname).conf
 	systemctl enable $(progname).service
 	systemctl start $(progname).service
