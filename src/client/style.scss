@@ -11,9 +11,9 @@ $color3: #FF847C;
 $color4: #E84A5F;
 $color5: #2A363B;
 
-$bar-width: 6px;
+$bar-width: 10px;
 $bar-radius: $bar-width;
-$thumb-size: 15px;
+$thumb-size: 20px;
 
 %active   { opacity: 1 }
 %inactive { opacity: 0.25 }
@@ -37,7 +37,7 @@ div {
     &#toprow { padding: 20px }
 
     &#current-vol {
-        font-size: 200%;
+        font-size: 300%;
         padding: 20px;
     }
 }
@@ -74,10 +74,10 @@ button {
 }
 
 div#vol-widget {
-    max-width: 500px;
+    //max-width: 500px;
 
     svg {
-        width: 75px;
+        width: 150px;
 
         fill: $color2;
         stroke: $color2;
