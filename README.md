@@ -36,3 +36,5 @@ whole thing with stow.
 
 ## TODO
 * Use a proper logger
+* Use the Python/C API
+* make websockets work with zeroconf (avahi)
