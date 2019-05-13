@@ -111,6 +111,7 @@ system: $(build_nginx_conf) $(systemd_unit)
 
 $(venv): $(py_requirements)
 	@mkdir -p $(venv_dir)
+	@systemctl stop $(progname).service
 	virtualenv -p $(py_path) $(venv)
 	$(activate_venv); \
 		pip install -r $(py_requirements)
@@ -206,11 +207,9 @@ install: $(venv)
 	mkdir -p $(install_dir)
 	cp -r $(build_dir)/* $(install_dir)
 	$(STOW) $(STOW_OPTS) $(progname)
-
-enable: install
 	systemctl enable $(progname).service
 	systemctl start $(progname).service
-	ln -s $(install_nginx_conf) $(nginx_sites)/$(progname).conf
+	ln -fs $(install_nginx_conf) $(nginx_sites)/$(progname).conf
 	systemctl restart nginx.service
 
 clean:
