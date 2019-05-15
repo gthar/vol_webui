@@ -13,6 +13,8 @@ transfer the filed to the Pi and compile the C code there.
 Make install creates a virtualenv for the package dependencies and installs the
 whole thing with stow.
 
+First install https://github.com/gthar/alsavolctl in the target virtualenv.
+
 * `make remote clean`
 * copy over to the RaspberryPi and continue there
 * `make compiled clean`
@@ -33,8 +35,9 @@ whole thing with stow.
 * alsa
 * nginx
 * python3.7
+* python websockets
+* https://github.com/gthar/alsavolctl
 
 ## TODO
 * Use a proper logger
-* Use the Python/C API
 * make websockets work with zeroconf (avahi)
