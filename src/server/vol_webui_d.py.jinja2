@@ -11,13 +11,13 @@ import json
 import sys
 
 import websockets
+import alsavolctl
 
 
 # These two will be hardcoded resulting file. This allows me to have
 # the client javascript sent as a static file
 PREFIX = {{ prefix }}
 PORT = {{ port }}
-MAX_LINEAR_DB_SCALE = 24
 
 
 async def broadcast(connected, msg):
@@ -37,101 +37,40 @@ def mk_msg(val_type, value):
     return json.dumps({'type': val_type, 'value': value})
 
 
-def parse_monitor_out(line):
-    """
-    Parse one line of the monitorer output
-    """
-    param, val = line.split()
-    return param, int(val)
-
-
-def vol_scaler(state, method="cube", n=3):
-    """
-    Scale the volume to the range 0-100
-    """
-    ran = state["pmax"] - state["pmin"]
-    scaled = (state["volume"] - state["pmin"]) / ran
-    if method == "cube":
-        scaled = scaled ** n
-    return round(scaled * 100)
-
-
-def vol_unscaler(vol, state, method="cube", n=3):
-    """
-    Bring back a value scaled as a percentage to a physical volume
-    """
-    range = state["pmax"] - state["pmin"]
-    scaled = vol / 100
-    if method == "cube":
-        scaled = scaled ** (1/n)
-    return round(scaled * range + state["pmin"])
-
-
-async def producer(card, device, mixer, connected):
+async def producer(mixer_ctl, connected, loop):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
     volume and mute state and broadcast any changes to all clients
     """
-    global state
+    pmin, pmax = mixer_ctl.getrange()
 
     print("starting monitor loop")
-    cmd = PREFIX + "/bin/alsa_events"
 
-    proc = await asyncio.create_subprocess_exec(
-        cmd, card, device, mixer,
-        stdout=asyncio.subprocess.PIPE
-    )
+    while True:
+        result = await loop.run_in_executor(None, mixer_ctl.wait_for_event)
+        for param, val in result.items():
 
-    # read and store the initial values
-    delim = '----\n'
-    content = await proc.stdout.readuntil(delim.encode())
-    lines = content.decode().replace(delim, "").strip().split("\n")
-    state = dict(parse_monitor_out(line) for line in lines)
+            if param == "volume":
+                volume = alsavolctl.vol_scaler(val, (pmin, pmax))
+                print("vol changed to {} ({})".format(val, volume))
+                await broadcast(connected, mk_msg('volume', volume))
 
-    async for line in proc.stdout:
-
-        try:
-            param, val = parse_monitor_out(line.decode())
-        except:
-            continue
-
-        state[param] = val
-
-        if param == "volume":
-            volume = vol_scaler(state)
-            print("vol changed to {} ({})".format(state["volume"], volume))
-            await broadcast(connected, mk_msg('volume', volume))
-
-        if param == "switch":
-            mute = not state["switch"]
-            print("switch changed to {} (mute={})".format(state["switch"], mute))
-            await broadcast(connected, mk_msg('mute', mute))
-
-    returncode = await proc.wait()
-    return returncode
+            if param == "switch":
+                mute = not val
+                print("switch changed to {} (mute={})".format(val, mute))
+                await broadcast(connected, mk_msg('mute', mute))
 
 
-async def set_alsa(param, val, device, mixer):
-    """
-    Set either the volume or switch state
-    """
-    cmd = PREFIX + "/bin/alsa_set"
-    await asyncio.create_subprocess_exec(
-        cmd, device, mixer, param, str(val),
-        stdout=asyncio.subprocess.PIPE
-    )
-
-
-async def handler(websocket, _, connected, device, mixer):
+async def handler(websocket, _, connected, mixer_ctl):
     """
     WebSocket handler. Watch for changes in the clients and update the volume
     accordingly
     """
-    global state
     connected.add(websocket)
+    vol_range = mixer_ctl.getrange()
+    volume = alsavolctl.vol_scaler(mixer_ctl.getvolume(), vol_range)
+    mute = not mixer_ctl.getswitch()
     try:
-        volume = vol_scaler(state)
-        mute = not state["switch"]
         await websocket.send(mk_msg('volume', volume))
         await websocket.send(mk_msg('mute', mute))
 
@@ -139,12 +78,12 @@ async def handler(websocket, _, connected, device, mixer):
             data = json.loads(msg)
 
             if data['type'] == 'volume':
-                vol = vol_unscaler(data['value'], state)
-                await set_alsa("volume", vol, device, mixer)
+                vol = alsavolctl.vol_unscaler(data['value'], vol_range)
+                mixer_ctl.setvolume(vol)
 
             elif data['type'] == 'mute':
-                switch_state = int(not state["switch"])
-                await set_alsa("switch", switch_state, device, mixer)
+                switch = not mixer_ctl.getswitch()
+                mixer_ctl.setswitch(switch)
 
             else:
                 print("unsupported event: {}", data)
@@ -166,19 +105,15 @@ def main():
     args = parser.parse_args()
 
     connected = set()
-    state = {}
+    mixer_ctl = alsavolctl.Mixer(args.card, args.device, args.mixer)
+
     loop = asyncio.get_event_loop()
-    loop.create_task(producer(
-        args.card,
-        args.device,
-        args.mixer,
-        connected))
+    loop.create_task(producer(mixer_ctl, connected, loop))
     loop.run_until_complete(websockets.serve(
         functools.partial(
             handler,
             connected=connected,
-            device=args.device,
-            mixer=args.mixer),
+            mixer_ctl=mixer_ctl),
         args.host,
         PORT
     ))

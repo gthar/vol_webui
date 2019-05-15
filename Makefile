@@ -1,9 +1,11 @@
 progname = vol_webui
 build_dir = build
-prefix = /usr/local
-#prefix = $(build_dir)
-venv_dir = /usr/local/opt/virtualenvs
-venv = $(venv_dir)/volume_ctl
+# prefix = /usr/local
+prefix = $(build_dir)
+#venv_dir = /usr/local/opt/virtualenvs
+venv_dir = /home/rilla/Code/python
+#venv = $(venv_dir)/volume_ctl
+venv = $(venv_dir)/env
 nginx_sites = /etc/nginx/sites-enabled
 
 stow_dir = $(prefix)/stow
@@ -109,13 +111,6 @@ compiled: $(alsa_events) $(alsa_set)
 
 system: $(build_nginx_conf) $(systemd_unit)
 
-$(venv): $(py_requirements)
-	@mkdir -p $(venv_dir)
-	@systemctl stop $(progname).service
-	virtualenv -p $(py_path) $(venv)
-	$(activate_venv); \
-		pip install -r $(py_requirements)
-
 $(daemon): $(daemon_template)
 	@echo --- preparing server script
 	@mkdir -p $(bin_dir)
@@ -203,7 +198,9 @@ $(systemd_unit): $(unit_template)
 	    --device $(device) \
 	    --mixer $(mixer)
 
-install: $(venv)
+install:
+	$(activate_venv); \
+		pip install -r $(py_requirements)
 	mkdir -p $(install_dir)
 	cp -r $(build_dir)/* $(install_dir)
 	$(STOW) $(STOW_OPTS) $(progname)
@@ -217,4 +214,3 @@ clean:
 
 reset: clean
 	rm -rf $(build_dir)
-	rm -rf $(venv)
