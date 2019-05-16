@@ -37,21 +37,19 @@ def mk_msg(val_type, value):
     return json.dumps({'type': val_type, 'value': value})
 
 
-async def producer(mixer_ctl, connected, loop):
+async def producer(mixer_ctl, connected):
     """
     Given a mixer, a card and a list of connected clients, watch for changes in
     volume and mute state and broadcast any changes to all clients
     """
-    pmin, pmax = mixer_ctl.getrange()
-
     print("starting monitor loop")
 
-    while True:
-        result = await loop.run_in_executor(None, mixer_ctl.wait_for_event)
-        for param, val in result.items():
+    async for msg in mixer_ctl.monitor_async():
+
+        for param, val in msg.items():
 
             if param == "volume":
-                volume = alsavolctl.vol_scaler(val, (pmin, pmax))
+                volume = mixer_ctl.getvolume_scaled()
                 print("vol changed to {} ({})".format(val, volume))
                 await broadcast(connected, mk_msg('volume', volume))
 
@@ -67,8 +65,7 @@ async def handler(websocket, _, connected, mixer_ctl):
     accordingly
     """
     connected.add(websocket)
-    vol_range = mixer_ctl.getrange()
-    volume = alsavolctl.vol_scaler(mixer_ctl.getvolume(), vol_range)
+    volume = mixer_ctl.getvolume_scaled()
     mute = not mixer_ctl.getswitch()
     try:
         await websocket.send(mk_msg('volume', volume))
@@ -78,8 +75,7 @@ async def handler(websocket, _, connected, mixer_ctl):
             data = json.loads(msg)
 
             if data['type'] == 'volume':
-                vol = alsavolctl.vol_unscaler(data['value'], vol_range)
-                mixer_ctl.setvolume(vol)
+                mixer_ctl.setvolume_unscaled(data['value'])
 
             elif data['type'] == 'mute':
                 switch = not mixer_ctl.getswitch()
@@ -108,7 +104,7 @@ def main():
     mixer_ctl = alsavolctl.Mixer(args.card, args.device, args.mixer)
 
     loop = asyncio.get_event_loop()
-    loop.create_task(producer(mixer_ctl, connected, loop))
+    loop.create_task(producer(mixer_ctl, connected))
     loop.run_until_complete(websockets.serve(
         functools.partial(
             handler,
