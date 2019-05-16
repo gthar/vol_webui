@@ -20,11 +20,6 @@ device = default
 mixer = Digital
 kept_chars = "0123456789M()"
 
-LIBS = alsa
-CFLAGS = -std=gnu99 -Wall -pedantic -Wextra `pkg-config --cflags $(LIBS)`
-LDFLAGS = `pkg-config --libs $(LIBS)`
-
-CC = gcc
 J2C = python render_template.py
 JSC = closure-compiler
 CSSC = sass
@@ -43,10 +38,6 @@ src_dir = src
 server_src = $(src_dir)/server
 client_src = $(src_dir)/client
 
-monitor_src = $(server_src)/alsa_events.c
-setter_src = $(server_src)/alsa_set.c
-helpers_src = $(server_src)/helpers.c
-helpers_h = $(server_src)/helpers.h
 daemon_template = $(server_src)/vol_webui_d.py.jinja2
 
 nginx_template = $(src_dir)/nginx.conf.jinja2
@@ -70,9 +61,6 @@ build_www = $(build_share)/$(www)
 install_www = $(install_share)/$(www)
 
 tmp_dir = temp
-alsa_events_o = $(tmp_dir)/alsa_events.o
-alsa_set_o = $(tmp_dir)/alsa_set.o
-helpers_o = $(tmp_dir)/helpers.o
 tmp_index = $(tmp_dir)/index.html.jinja2
 
 index_html = $(tmp_dir)/index.html
@@ -86,9 +74,7 @@ systemd_dir = $(build_dir)/lib/systemd/system
 systemd_unit = $(systemd_dir)/$(progname).service
 
 bin_dir = $(build_dir)/bin
-daemon = $(bin_dir)/vol_webui_d.py
-alsa_events = $(bin_dir)/alsa_events
-alsa_set = $(bin_dir)/alsa_set
+server = $(bin_dir)/vol_webui_d.py
 
 full_font = $(tmp_dir)/full_font.ttf
 
@@ -99,19 +85,13 @@ py_path = `which python$(py_version)`
 bash = '\#!/usr/bin/env bash'
 interpreter = $(venv)/bin/python$(py_version)
 
-all: server client system
-
-server: $(daemon) $(alsa_events) $(alsa_set)
+all: $(server) client system
 
 client: $(main_page) $(font)
 
-remote: system client $(daemon)
-
-compiled: $(alsa_events) $(alsa_set)
-
 system: $(build_nginx_conf) $(systemd_unit)
 
-$(daemon): $(daemon_template)
+$(server): $(daemon_template)
 	@echo --- preparing server script
 	@mkdir -p $(bin_dir)
 	$(J2C) $(daemon_template) $(daemon) \
@@ -119,30 +99,6 @@ $(daemon): $(daemon_template)
 		--prefix \"$(prefix)\" \
 		--interpreter $(interpreter)
 	chmod +x $(daemon)
-
-$(alsa_events_o): $(monitor_src) $(helpers_h)
-	@echo --- building alsa monitorer
-	@mkdir -p $(tmp_dir)
-	$(CC) $(CFLAGS) -c $(monitor_src) -o $(alsa_events_o)
-
-$(alsa_events): $(alsa_events_o) $(helpers_o)
-	@echo --- linking alsa monitorer
-	@mkdir -p $(bin_dir)
-	$(CC) $(alsa_events_o) $(helpers_o) -o $(alsa_events) $(LDFLAGS)
-
-$(alsa_set_o): $(setter_src) $(helpers_h)
-	@echo --- building alsa setter
-	@mkdir -p $(tmp_dir)
-	$(CC) $(CFLAGS) -c $(setter_src) -o $(alsa_set_o)
-
-$(helpers_o): $(helpers_src)
-	@mkdir -p $(tmp_dir)
-	$(CC) $(CFLAGS) -c $(helpers_src) -o $(helpers_o)
-
-$(alsa_set): $(alsa_set_o) $(helpers_o)
-	@echo --- linking alsa monitorer
-	@mkdir -p $(bin_dir)
-	$(CC) $(alsa_set_o) $(helpers_o) -o $(alsa_set) $(LDFLAGS)
 
 $(full_font):
 	@echo --- retrieving font
