@@ -94,11 +94,11 @@ system: $(build_nginx_conf) $(systemd_unit)
 $(server): $(daemon_template)
 	@echo --- preparing server script
 	@mkdir -p $(bin_dir)
-	$(J2C) $(daemon_template) $(daemon) \
+	$(J2C) $(daemon_template) $(server) \
 		--port $(ws_port) \
 		--prefix \"$(prefix)\" \
 		--interpreter $(interpreter)
-	chmod +x $(daemon)
+	chmod +x $(server)
 
 $(full_font):
 	@echo --- retrieving font
