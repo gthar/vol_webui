@@ -1,7 +1,7 @@
 # vol_webui
 
 Remote Web UI interface to control the volume of my RaspberryPi from my phone
-Intended to be run by the user `volume`.
+Intended to be used with the `vol_webui` service from https://github.com/gthar/alsavolctl. This Web UI should receive WebSocket messages from that service. Make sure the port matches.
 
 ## Build and install
 First install https://github.com/gthar/alsavolctl in the target virtualenv.
@@ -10,7 +10,7 @@ First install https://github.com/gthar/alsavolctl in the target virtualenv.
 * copy over to the RaspberryPi and continue there
 * `sudo make install`
 
-## Build/install dependencies
+## Install dependencies
 * fonttools
 * jinja2
 * SASS
