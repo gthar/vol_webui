@@ -10,7 +10,7 @@ First install https://github.com/gthar/alsavolctl in the target virtualenv.
 * copy over to the RaspberryPi and continue there
 * `sudo make install`
 
-## Install dependencies
+## Build dependencies
 * fonttools
 * jinja2
 * SASS
