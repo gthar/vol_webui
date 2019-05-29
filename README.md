@@ -17,6 +17,7 @@ First install https://github.com/gthar/alsavolctl in the target virtualenv.
 * minify
 * Google Closure Compiler
 * wget
+* https://github.com/gthar/render_jinja
 
 ## Run dependencies
 * nginx

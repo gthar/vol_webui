@@ -7,7 +7,7 @@ ui_port = 4567
 ws_port = 6789
 kept_chars = "0123456789M()"
 
-J2C = python render_template.py
+J2C = render_jinja
 JSC = closure-compiler
 CSSC = sass
 TTFC = pyftsubset
@@ -66,7 +66,7 @@ $(index_html): $(index_template) $(main_js) $(style) $(icon_src)
 	@mkdir -p $(tmp_dir)
 	@cp $(index_template) $(tmp_index)
 	@cp $(icon_src) $(tmp_dir)
-	$(J2C) $(tmp_index) $(index_html)
+	$(J2C) $(tmp_index) --output=$(index_html)
 
 $(main_js): $(js_src)
 	@echo --- building main.js
@@ -84,9 +84,9 @@ $(style): $(style_src)
 $(build_nginx_conf): $(nginx_template)
 	@echo --- rendering nginx config file
 	@mkdir -p $(build_dir)
-	$(J2C) $(nginx_template) $(build_nginx_conf) \
-		--port $(ui_port) \
-		--web_dir $(install_www)
+	$(J2C) $(nginx_template) --output=$(build_nginx_conf) \
+		port=$(ui_port) \
+		web_dir=$(install_www)
 
 install:
 	cp -r $(build_www) $(install_www)
